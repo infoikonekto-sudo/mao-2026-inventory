@@ -1,0 +1,35 @@
+﻿{
+  "projects": [
+    {
+      "name": "mao-2026-inventory",
+      "id": "prj_vcUUPpoyalaKUCmimDMtkR2fBUvx",
+      "latestProductionUrl": "https://mao-2026-inventory.vercel.app",
+      "updatedAt": 1771831912972,
+      "nodeVersion": "24.x",
+      "deprecated": false
+    },
+    {
+      "name": "mao-2026",
+      "id": "prj_2lOczG5IZowyhGdlSzQUV8SJYnE0",
+      "latestProductionUrl": "https://mao-2026.vercel.app",
+      "updatedAt": 1771831119252,
+      "nodeVersion": "24.x",
+      "deprecated": false
+    },
+    {
+      "name": "manos-a-la-obra-ventas",
+      "id": "prj_O9JlCHAic1JaHZpASVQDCttGVFbX",
+      "latestProductionUrl": "https://manos-a-la-obra-ventas.vercel.app",
+      "updatedAt": 1763998605056,
+      "nodeVersion": "22.x",
+      "deprecated": false
+    }
+  ],
+  "pagination": {
+    "count": 3,
+    "next": null,
+    "prev": 1771831912972
+  },
+  "contextName": "ikonektos-projects",
+  "elapsed": "701ms"
+}

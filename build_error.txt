@@ -1,0 +1,6 @@
+﻿
+> mao-2026-inventory@0.1.0 build
+> tsc && vite build
+
+src/pages/DiagnosticsPage.tsx(4,46): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/services/supabaseClient.ts(1334,11): error TS6133: 'roleLabels' is declared but its value is never read.

@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-white text-gray-900 font-sans antialiased;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neutral-light;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary-light rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-primary;
+}
+
+/* Utility Classes removed - use Tailwind utilities directly */
+
+/* Button Animations */
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-light transition-colors shadow-md hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-neutral-lighter text-primary rounded-lg font-medium hover:bg-neutral-light transition-colors;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-gray-600 hover:bg-neutral-light rounded-lg transition-colors;
+  }
+
+  .card {
+    @apply bg-white rounded-lg border border-neutral-lighter shadow-md;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-lg transition-shadow cursor-pointer;
+  }
+
+  .input-base {
+    @apply w-full px-3 py-2 border-2 border-neutral-lighter rounded-lg focus:outline-none focus:border-primary transition-colors;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-success/10 text-success;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning/10 text-warning;
+  }
+
+  .badge-error {
+    @apply badge bg-error/10 text-error;
+  }
+
+  .badge-info {
+    @apply badge bg-info/10 text-info;
+  }
+}
+
+/* Loading and Animation States */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+/* Neon Login Background Animations */
+@keyframes neon-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px #0ea5e9, 0 0 10px #0ea5e9, 0 0 15px #0ea5e9, inset 0 0 5px #0ea5e9;
+  }
+  50% {
+    box-shadow: 0 0 10px #0ea5e9, 0 0 20px #0ea5e9, 0 0 30px #0ea5e9, inset 0 0 10px #0ea5e9;
+  }
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0px);
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes color-shift {
+  0% {
+    background: linear-gradient(135deg, #001233 0%, #003366 100%);
+  }
+  25% {
+    background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+  }
+  50% {
+    background: linear-gradient(135deg, #0066cc 0%, #00ccff 100%);
+  }
+  75% {
+    background: linear-gradient(135deg, #003366 0%, #0066cc 100%);
+  }
+  100% {
+    background: linear-gradient(135deg, #001233 0%, #003366 100%);
+  }
+}
+
+.neon-login-bg {
+  animation: color-shift 8s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.neon-particle {
+  animation: float-up 6s ease-in infinite;
+  position: absolute;
+  border-radius: 50%;
+}
+
+.neon-logo-glow {
+  animation: neon-glow 2s ease-in-out infinite;
+  border-radius: 50%;
+}
+
+.neon-pulse {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
