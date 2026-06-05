@@ -1667,7 +1667,8 @@ const CATEGORY_PREFIXES: Record<string, string> = {
   'Mobiliario': 'MOB',
   'Herramientas': 'HER',
   'Construcción': 'CON',
-  'Comida': 'COM',
+  'Abarrotes': 'ABA',
+  'ABARROTES': 'ABA',
   'Utilería': 'UTI',
 }
 

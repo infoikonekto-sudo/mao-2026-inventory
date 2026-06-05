@@ -512,7 +512,7 @@ export default function InventoryPage() {
           ${printItem.category} | ${printItem.location || 'Sin ubicación'}
         </p>
         ${barcodeHtml}
-        <p style="font-size:10px; color:#999; margin:4px 0 0;">Q${(printItem.unit_cost || 0).toFixed(2)} | Stock: ${printItem.current_stock} ${printItem.unit_of_measure || 'uds'}</p>
+        <p style="font-size:10px; color:#999; margin:4px 0 0;"></p>
       </div>
     `).join('')
 
@@ -555,7 +555,7 @@ export default function InventoryPage() {
           <p style="font-weight:bold;font-size:13px;margin:0 0 4px;">${item.name}</p>
           <p style="font-size:10px;color:#666;margin:0 0 6px;">${item.category} | ${item.location || 'Sin ubicación'}</p>
           ${svg.outerHTML}
-          <p style="font-size:10px;color:#999;margin:4px 0 0;">Q${(item.unit_cost || 0).toFixed(2)} | Stock: ${item.current_stock} ${item.unit_of_measure || 'uds'}</p>
+          <p style="font-size:10px;color:#999;margin:4px 0 0;"></p>
         </div>`)
     }).join('')
 
@@ -1402,7 +1402,6 @@ export default function InventoryPage() {
               <p className="text-sm text-gray-500 mb-2">{printItem.category} | {printItem.location || 'Sin ubicación'}</p>
               <svg ref={barcodePrintRef} className="mx-auto" />
               <p className="text-xs text-gray-400 mt-2">
-                Q{(printItem.unit_cost || 0).toFixed(2)} | Stock: {printItem.current_stock} {printItem.unit_of_measure || 'uds'}
               </p>
             </div>
 
