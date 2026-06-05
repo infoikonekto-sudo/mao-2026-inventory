@@ -47,9 +47,9 @@ const PACKAGE_UNITS = ['cajas', 'paquetes', 'docenas', 'bolsas', 'rollos', 'resm
 
 const DEFAULT_CATEGORIES_LIST = [
   'LIMPIEZA',
-  'PAPELERÍA',
+  'LIBRERÍA',
   'MANUALIDADES',
-  'COCINA Y ALIMENTOS',
+  'ABARROTES',
   'ACTIVOS',
   'EVENTOS Y DECORACIÓN',
   'HERRAMIENTAS Y MANTENIMIENTO'
@@ -67,12 +67,12 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'quimico', 'franela', 'escobillon', 'cera', 'lustramuebles', 'insecticida', 'basurero', 
     'recogedor', 'windex', 'fab', 'rinso', 'pastilla inodoro', 'sanitario', 'gel antibacterial'
   ],
-  'PAPELERÍA': [
+  'LIBRERÍA': [
     'hoja', 'cuaderno', 'boligrafo', 'bolígrafo', 'lapicero', 'marcador', 'sobre', 'folder',
     'lapiz', 'lápiz', 'papel', 'carpeta', 'resaltador', 'corrector', 'grapadora', 'perforadora',
     'regla', 'borrador', 'tinta', 'pluma', 'libro', 'agenda', 'bloc', 'post-it', 'folio',
     'resma', 'toner', 'cartucho', 'oficina', 'clip', 'chincheta', 'cinta adhesiva', 'masking', 
-    'sellador', 'grapa', 'cartulina', 'sacapuntas', 'fastener', 'pizarra'
+    'sellador', 'grapa', 'cartulina', 'sacapuntas', 'fastener', 'pizarra', 'pliego', 'construccion', 'construcción'
   ],
   'MANUALIDADES': [
     'foamy', 'fomi', 'fomy', 'brillantina', 'papel china', 'lana', 'silicon', 'silicón', 
@@ -80,7 +80,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     'yeso', 'pegamento', 'tijera', 'craft', 'fieltro', 'lentejuela', 'pompon', 'hilo', 'aguja', 
     'mariposa', 'ojitos', 'calcomania', 'sticker', 'diamantina', 'madera', 'balsa', 'tempera', 'acuarelas'
   ],
-  'COCINA Y ALIMENTOS': [
+  'ABARROTES': [
     'comestible', 'vajilla', 'vaso', 'cubierto', 'reposteria', 'repostería', 'ingrediente',
     'leche', 'cafe', 'café', 'azucar', 'azúcar', 'arroz', 'frijol', 'harina', 'aceite', 'sal',
     'pasta', 'cereal', 'avena', 'atun', 'atún', 'galleta', 'jugo', 'refresco', 'agua', 'sopa',
@@ -110,12 +110,29 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   ],
 }
 
-function detectCategory(name: string): string | null {
+function resolveCategory(baseCategory: string, allCategories?: string[]): string {
+  if (!allCategories || allCategories.length === 0) return baseCategory;
+  if (allCategories.includes(baseCategory)) return baseCategory;
+  
+  // Si no existe exactamente, buscamos si el usuario la renombró parcialmente
+  const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const normalizedBase = normalize(baseCategory);
+  const root = normalizedBase.substring(0, 5); // Ej: "abarr", "limpi"
+  
+  const match = allCategories.find(c => {
+    const normalizedC = normalize(c);
+    return normalizedC.includes(root);
+  });
+  
+  return match || baseCategory;
+}
+
+function detectCategory(name: string, allCategories?: string[]): string | null {
   if (!name || name.length < 3) return null;
   const lower = name.toLowerCase();
 
   // EXCEPCIÓN 1: Si incluye "EN USO", es ACTIVOS.
-  if (lower.includes('en uso')) return 'ACTIVOS';
+  if (lower.includes('en uso')) return resolveCategory('ACTIVOS', allCategories);
 
   const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const normalizedName = normalize(lower);
@@ -132,7 +149,7 @@ function detectCategory(name: string): string | null {
       if (normalizedKw.length > 4 && normalizedName.includes(normalizedKw)) return true;
       return false;
     })) {
-      return category;
+      return resolveCategory(category, allCategories);
     }
   }
   return null;
@@ -212,7 +229,7 @@ export default function InventoryPage() {
   const [formData, setFormData] = useState({
     item_code: '',
     name: '',
-    category: 'PAPELERÍA',
+    category: 'LIBRERÍA',
     stock: 0,
     min_stock: 0,
     price: 0,
@@ -365,7 +382,7 @@ export default function InventoryPage() {
       setFormData({
         item_code: '',
         name: '',
-        category: 'PAPELERÍA',
+        category: 'LIBRERÍA',
         stock: 0,
         min_stock: 0,
         price: 0,
@@ -802,15 +819,14 @@ export default function InventoryPage() {
     if (!user) return
     
     const updates = items.filter(item => {
-      // Solo sugerir clasificar aquellos ítems que tengan una categoría diferente a la recomendada
-      const detected = detectCategory(item.name)
+      const detected = detectCategory(item.name, allCategories)
       return detected && detected !== item.category
     }).map(item => ({
       id: item.id,
       name: item.name,
       oldCategory: item.category,
-      newCategory: detectCategory(item.name) as string,
-      payload: { category: detectCategory(item.name) as string }
+      newCategory: detectCategory(item.name, allCategories) as string,
+      payload: { category: detectCategory(item.name, allCategories) as string }
     }))
 
     if (updates.length === 0) {
@@ -1203,7 +1219,7 @@ export default function InventoryPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const detected = detectCategory(formData.name)
+                      const detected = detectCategory(formData.name, allCategories)
                       if (detected) {
                         setFormData(prev => ({ ...prev, category: detected }))
                         toast.success(`Categoría asignada automáticamente: ${detected}`)
