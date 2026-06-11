@@ -70,6 +70,7 @@ export default function WindowDeliveryPage() {
     // Data State
     const [items, setItems] = useState<InventoryItem[]>([])
     const [departments, setDepartments] = useState<Department[]>([])
+    const [allUsers, setAllUsers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
     // Form State
@@ -113,7 +114,7 @@ export default function WindowDeliveryPage() {
         if (!license?.id) return
         try {
             setLoading(true)
-            const [inventoryData, deptsData] = await Promise.all([
+            const [inventoryData, deptsData, usersData] = await Promise.all([
                 supabase
                     .from('inventory_items')
                     .select('id, item_code, name, category, current_stock, unit_of_measure, units_per_package, location')
@@ -124,10 +125,17 @@ export default function WindowDeliveryPage() {
                     .from('departments')
                     .select('*')
                     .eq('license_id', license.id)
-                    .order('name')
+                    .order('name'),
+                supabase
+                    .from('users')
+                    .select('id, full_name, department_id')
+                    .eq('license_id', license.id)
+                    .eq('is_active', true)
+                    .order('full_name')
             ])
             setItems(inventoryData.data || [])
             setDepartments(deptsData.data || [])
+            setAllUsers(usersData.data || [])
         } catch (error) {
             console.error('Error loading data:', error)
             toast.error('Error cargando inventario')
@@ -641,8 +649,22 @@ export default function WindowDeliveryPage() {
                                             className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 font-bold text-gray-700"
                                             placeholder="¿Quién recibe el material?"
                                             value={receiverName}
-                                            onChange={e => setReceiverName(e.target.value)}
+                                            onChange={e => {
+                                                const val = e.target.value
+                                                setReceiverName(val)
+                                                // Check for match to auto-select department
+                                                const match = allUsers.find(u => u.full_name?.toLowerCase() === val.toLowerCase())
+                                                if (match && match.department_id) {
+                                                    setDepartmentId(match.department_id)
+                                                }
+                                            }}
+                                            list="users-list"
                                         />
+                                        <datalist id="users-list">
+                                            {allUsers.map(u => (
+                                                <option key={u.id} value={u.full_name} />
+                                            ))}
+                                        </datalist>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
