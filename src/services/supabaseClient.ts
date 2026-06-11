@@ -2559,6 +2559,7 @@ export interface Budget {
   id: string
   license_id: string
   name: string
+  department_id?: string | null
   category: string
   total_amount: number
   spent_amount: number
@@ -2597,6 +2598,7 @@ export async function createBudget(
   budgetData: {
     name: string
     category: string
+    department_id?: string | null
     total_amount: number
     start_date?: string
     end_date?: string
@@ -2615,6 +2617,7 @@ export async function createBudget(
           license_id: licenseId,
           name: budgetData.name,
           category: budgetData.category,
+          department_id: budgetData.department_id || null,
           total_amount: budgetData.total_amount,
           spent_amount: 0,
           remaining_amount: budgetData.total_amount,
@@ -2641,6 +2644,7 @@ export async function updateBudget(
   budgetData: {
     name?: string
     category?: string
+    department_id?: string | null
     total_amount?: number
     status?: 'activo' | 'completado' | 'pausado'
     description?: string

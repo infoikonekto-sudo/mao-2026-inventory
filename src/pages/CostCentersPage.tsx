@@ -11,6 +11,7 @@ export default function CostCentersPage() {
     const [costCenters, setCostCenters] = useState<CostCenter[]>([])
     const [budgets, setBudgets] = useState<Budget[]>([])
     const [loading, setLoading] = useState(true)
+    const [departments, setDepartments] = useState<any[]>([])
     const [showForm, setShowForm] = useState(false)
     const [editingId, setEditingId] = useState<string | null>(null)
     const [submitting, setSubmitting] = useState(false)
@@ -34,12 +35,14 @@ export default function CostCentersPage() {
     const loadData = async () => {
         try {
             setLoading(true)
-            const [ccData, budgetData] = await Promise.all([
+            const [ccData, budgetData, deptsData] = await Promise.all([
                 getCostCenters(license!.id),
-                getBudgets(license!.id)
+                getBudgets(license!.id),
+                supabase.from('departments').select('*').order('name')
             ])
             setCostCenters(ccData)
             setBudgets(budgetData)
+            setDepartments(deptsData.data || [])
         } catch (error) {
             console.error('Error loading data:', error)
             toast.error('Error al cargar datos')
@@ -341,19 +344,16 @@ export default function CostCentersPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Departamento / Área</label>
                             <select
                                 value={formData.department_id || ''}
                                 onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                className="w-full pl-3 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             >
-                                <option value="">Ninguno (Sin departamento)</option>
-                                <option value="Académico">Académico</option>
-                                <option value="Administrativo">Administrativo</option>
-                                <option value="Finanzas">Finanzas</option>
-                                <option value="Mantenimiento">Mantenimiento</option>
-                                <option value="Servicios Generales">Servicios Generales</option>
-                                <option value="Tecnología">Tecnología</option>
+                                <option value="">Ninguno (Sin área)</option>
+                                {departments.map(d => (
+                                    <option key={d.id} value={d.id}>{d.name}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -379,6 +379,7 @@ export default function CostCentersPage() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Código</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Nombre</th>
+                                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Área</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Presupuesto Maestro</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Techo Asignado</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Gastado</th>
@@ -397,6 +398,7 @@ export default function CostCentersPage() {
                                     <tr key={cc.id} className={`hover:bg-gray-50 ${!cc.is_active ? 'opacity-50' : ''}`}>
                                         <td className="px-6 py-4 text-sm font-mono font-semibold text-purple-700">{cc.code}</td>
                                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{cc.name}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">{departments.find(d => d.id === cc.department_id)?.name || '-'}</td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {masterBudget ? (
                                                 <span className="flex items-center gap-1">

@@ -5,10 +5,12 @@ import { Button } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import { getBudgets, createBudget, updateBudget, deleteBudget, getCostCenters } from '@/services/supabaseClient'
 import toast from 'react-hot-toast'
+import { supabase } from '@/services/supabaseClient'
 
 interface Budget {
   id: string
   name: string
+  department_id?: string | null
   total_amount: number
   spent_amount: number
   remaining_amount: number
@@ -41,11 +43,13 @@ export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [costCenters, setCostCenters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [departments, setDepartments] = useState<any[]>([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    department_id: '',
     total_amount: '',
     category: 'general',
     start_date: '',
@@ -62,12 +66,14 @@ export default function BudgetsPage() {
       if (!license?.id) {
         throw new Error('No license ID available')
       }
-      const [budgetsData, costCentersData] = await Promise.all([
+      const [budgetsData, costCentersData, deptsData] = await Promise.all([
         getBudgets(license.id),
-        getCostCenters(license.id)
+        getCostCenters(license.id),
+        supabase.from('departments').select('*').order('name')
       ])
       setBudgets(budgetsData)
       setCostCenters(costCentersData || [])
+      setDepartments(deptsData.data || [])
     } catch (error) {
       console.error('Error loading budgets:', error)
       toast.error('Error al cargar presupuestos')
@@ -98,6 +104,7 @@ export default function BudgetsPage() {
         await updateBudget(editingId, {
           name: formData.name,
           category: formData.category,
+          department_id: formData.department_id || null,
           total_amount: amount,
           description: formData.description,
         })
@@ -107,6 +114,7 @@ export default function BudgetsPage() {
         await createBudget(license.id, {
           name: formData.name,
           category: formData.category,
+          department_id: formData.department_id || null,
           total_amount: amount,
           start_date: formData.start_date,
           end_date: formData.end_date,
@@ -118,6 +126,7 @@ export default function BudgetsPage() {
       setFormData({
         name: '',
         description: '',
+        department_id: '',
         total_amount: '',
         category: 'general',
         start_date: '',
@@ -135,6 +144,7 @@ export default function BudgetsPage() {
     setFormData({
       name: budget.name,
       description: budget.description || '',
+      department_id: budget.department_id || '',
       total_amount: budget.total_amount.toString(),
       category: budget.category,
       start_date: budget.start_date || '',
@@ -165,6 +175,7 @@ export default function BudgetsPage() {
     setFormData({
       name: '',
       description: '',
+      department_id: '',
       total_amount: '',
       category: 'general',
       start_date: '',
@@ -250,6 +261,7 @@ export default function BudgetsPage() {
             setFormData({
               name: '',
               description: '',
+              department_id: '',
               total_amount: '',
               category: 'general',
               start_date: '',
@@ -471,6 +483,22 @@ export default function BudgetsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Departamento / Área
+                </label>
+                <select
+                  value={formData.department_id}
+                  onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Ninguno (General)</option>
+                  {departments.map(d => (
+                    <option key={d.id} value={d.id}>{d.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Monto Total (Q) *
                 </label>
                 <input
@@ -549,6 +577,7 @@ export default function BudgetsPage() {
             <tr>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Nombre</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Categoría</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Área</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Total</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Gastado</th>
               <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Disponible</th>
@@ -574,6 +603,9 @@ export default function BudgetsPage() {
                     <td className="px-6 py-4 text-sm text-gray-900">{budget.name}</td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {CATEGORIES.find(c => c.value === budget.category)?.label || budget.category}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {departments.find(d => d.id === budget.department_id)?.name || '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900 font-medium">
                       Q {budget.total_amount.toLocaleString('es-GT', { maximumFractionDigits: 2 })}
