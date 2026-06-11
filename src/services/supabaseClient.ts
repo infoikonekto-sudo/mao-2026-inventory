@@ -342,19 +342,20 @@ export async function createAuditLog(licenseId: string, userId: string, action: 
       .from('audit_logs')
       .insert([
         {
-          license_id: licenseId,
-          user_id: userId,
+          table_name: module,        // La tabla usa 'table_name' en lugar de 'module'
+          record_id: target || '00000000-0000-0000-0000-000000000000',
           action,
-          module,
-          target,
-          ip_address: 'local',
-          status: 'exitoso',
+          changed_by: userId || '00000000-0000-0000-0000-000000000000',
+          new_data: { license_id: licenseId },
         },
       ])
 
-    if (error) throw error
+    if (error) {
+      // No lanzar error - los audit logs son opcionales y no deben romper el flujo
+      console.warn('No se pudo crear audit log:', error.message)
+    }
   } catch (error) {
-    console.error('Error creating audit log:', error)
+    console.warn('Error creating audit log (ignorado):', error)
   }
 }
 
