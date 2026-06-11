@@ -34,6 +34,7 @@ export default function Sidebar({ isOpen, onToggle, user, onLogout }: SidebarPro
     { label: 'Entrega Express', icon: Truck, href: '/dashboard/ventanilla', id: 'ventanilla' },
     { label: 'Auditoría', icon: ShieldCheck, href: '/dashboard/audit', id: 'audit' },
     { label: 'Verificación de Conexiones', icon: LinkIcon, href: '/dashboard/verify-connections', id: 'verify-connections' },
+    { label: 'Departamentos / Áreas', icon: Building, href: '/dashboard/departments', id: 'departments' },
     { label: 'Configuración', icon: Settings, href: '/dashboard/settings', id: 'settings' },
   ]
 

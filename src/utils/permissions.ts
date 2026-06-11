@@ -21,6 +21,7 @@ export const rolePermissions = {
       'audit',
       'ventanilla',
       'verify-connections',
+      'departments',
       'settings',
       'profile',
     ],
@@ -44,6 +45,7 @@ export const rolePermissions = {
       'audit',
       'ventanilla',
       'verify-connections',
+      'departments',
       'profile',
     ],
   },
@@ -166,6 +168,7 @@ const routeToItem: Record<string, string> = {
   '/dashboard/audit': 'audit',
   '/dashboard/ventanilla': 'ventanilla',
   '/dashboard/settings': 'settings',
+  '/dashboard/departments': 'departments',
   '/dashboard/profile': 'profile',
 }
 

@@ -26,6 +26,7 @@ import ExpressOrdersPage from '@/pages/ExpressOrdersPage'
 import CreateExpressOrderPage from '@/pages/CreateExpressOrderPage'
 import ExpressOrderDetailPage from '@/pages/ExpressOrderDetailPage'
 import ChiefsDashboard from '@/pages/dashboards/ChiefsDashboard'
+import DepartmentsPage from '@/pages/DepartmentsPage'
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -238,6 +239,14 @@ export default function DashboardLayout() {
                 element={
                   <ProtectedRoute user={user} route="/dashboard/express-orders/:id" pageName="Detalle Orden Express">
                     <ExpressOrderDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/departments"
+                element={
+                  <ProtectedRoute user={user} route="/dashboard/departments" pageName="Gestión de Áreas">
+                    <DepartmentsPage />
                   </ProtectedRoute>
                 }
               />
