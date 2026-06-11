@@ -26,6 +26,7 @@ export default function CostCentersPage() {
 
     // Only Finance role (and budget chief) can access this page
     const canManage = user?.role === 'finanzas' || user?.role === 'jefe_presupuesto' || user?.role === 'admin' || user?.role === 'super_admin'
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
     useEffect(() => {
         if (!license?.id) return
@@ -428,15 +429,25 @@ export default function CostCentersPage() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm">
-                                            <button
-                                                onClick={() => handleToggleActive(cc.id, cc.is_active)}
-                                                className={`px-2 py-1 rounded text-xs font-medium ${cc.is_active
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-gray-100 text-gray-600'
+                                            {isAdmin ? (
+                                                <button
+                                                    onClick={() => handleToggleActive(cc.id, cc.is_active)}
+                                                    title={cc.is_active ? 'Haz clic para DESACTIVAR' : 'Haz clic para ACTIVAR'}
+                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all hover:scale-105 active:scale-95 shadow-sm ${
+                                                        cc.is_active
+                                                            ? 'bg-green-100 text-green-800 hover:bg-green-200 border border-green-300'
+                                                            : 'bg-gray-100 text-gray-500 hover:bg-blue-100 hover:text-blue-700 border border-gray-200 hover:border-blue-300'
                                                     }`}
-                                            >
-                                                {cc.is_active ? 'Activo' : 'Inactivo'}
-                                            </button>
+                                                >
+                                                    {cc.is_active ? '✅ Activo' : '⭕ Inactivo'}
+                                                </button>
+                                            ) : (
+                                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                                    cc.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                    {cc.is_active ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm flex gap-2">
                                             <button
