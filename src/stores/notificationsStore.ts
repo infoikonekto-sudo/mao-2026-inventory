@@ -21,8 +21,7 @@ export const useNotificationsStore = create<NotificationsState>((set) => ({
   notifications: [],
   setPendingRequisitions: (count) => set({ pendingRequisitions: count }),
   addNotification: (notification) => set((state) => ({ 
-    notifications: [notification, ...state.notifications],
-    pendingRequisitions: state.pendingRequisitions + 1 
+    notifications: [notification, ...state.notifications]
   })),
   markAllAsRead: () => set((state) => ({
     notifications: state.notifications.map(n => ({ ...n, read: true }))

@@ -69,17 +69,25 @@ export default function TopBar({ onToggleSidebar, user }: TopBarProps) {
           };
 
           if (payload.eventType === 'INSERT') {
+            if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
+              fetchPending(); // Actualizar contador
+            }
             if (newData.status === 'pendiente') {
-              // Notificar a jefes de compras y admins sobre nuevas requisiciones
               if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
                 notifyUser('Nueva Requisición', `Requisición ${newData.requisition_number || ''} creada.`);
               }
             }
           } else if (payload.eventType === 'UPDATE') {
-            // Notificar al creador de la requisición sobre cualquier cambio de estado
+            if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
+              fetchPending(); // Actualizar contador si cambió de estado
+            }
             if (newData.requested_by === user?.full_name) {
                const statusCapitalized = newData.status ? newData.status.charAt(0).toUpperCase() + newData.status.slice(1) : 'Actualizada';
                notifyUser(`Requisición ${statusCapitalized}`, `Tu requisición ${newData.requisition_number || ''} ahora está: ${newData.status}.`);
+            }
+          } else if (payload.eventType === 'DELETE') {
+            if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
+              fetchPending(); // Actualizar contador
             }
           }
         }
