@@ -872,6 +872,7 @@ export default function ProfessionalReportsPage() {
           'Fecha': new Date(r.created_at).toLocaleDateString('es-CO'),
           'Número': r.requisition_number || 'N/A',
           'Solicitante': r.requested_by || 'N/A',
+          'Área / Departamento': allDepartments.find(d => d.id === r.department_id)?.name || 'N/A',
           'Centro de Costo': r.cost_centers?.name || 'N/A',
           'Monto Est. (Q)': r.estimated_amount || 0,
           'Estado': r.status || 'N/A',
@@ -884,6 +885,7 @@ export default function ProfessionalReportsPage() {
           'Fecha': new Date(r.created_at).toLocaleDateString('es-CO'),
           'Número': r.request_number || 'N/A',
           'Solicitante': r.requested_by || 'N/A',
+          'Área / Departamento': allDepartments.find(d => d.id === r.department_id)?.name || 'N/A',
           'Centro de Costo': r.cost_centers?.name || 'N/A',
           'Monto Est. (Q)': r.estimated_amount || 0,
           'Estado': r.status || 'N/A',
@@ -895,6 +897,7 @@ export default function ProfessionalReportsPage() {
           'Fecha': new Date(o.created_at).toLocaleDateString('es-CO'),
           'Número': o.order_number || 'N/A',
           'Proveedor': o.suppliers?.name || 'N/A',
+          'Área / Departamento': allDepartments.find(d => d.id === o.department_id)?.name || 'N/A',
           'Centro de Costo': o.cost_centers?.name || 'N/A',
           'Monto Total (Q)': o.total_amount || 0,
           'Estado': o.status || 'N/A',
@@ -1843,6 +1846,7 @@ export default function ProfessionalReportsPage() {
                     <tr>
                       <th className="px-4 py-2 text-left">Número</th>
                       <th className="px-4 py-2 text-left">Justificación</th>
+                      <th className="px-4 py-2 text-left">Área / Depto</th>
                       <th className="px-4 py-2 text-right">Monto</th>
                       <th className="px-4 py-2 text-center">Estado</th>
                       <th className="px-4 py-2 text-center">Acciones</th>
@@ -1853,6 +1857,7 @@ export default function ProfessionalReportsPage() {
                       <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-2 font-bold text-blue-600">{r.requisition_number || '-'}</td>
                         <td className="px-4 py-2 text-xs text-slate-600">{r.justification ? r.justification.slice(0, 60) : '-'}</td>
+                        <td className="px-4 py-2 text-xs text-slate-500">{allDepartments.find(d => d.id === r.department_id)?.name || '-'}</td>
                         <td className="px-4 py-2 text-right font-semibold">Q {(r.estimated_amount || 0).toLocaleString()}</td>
                         <td className="px-4 py-2 text-center">
                           <span className={`px-2 py-1 rounded text-xs font-bold ${r.status === 'aprobado' ? 'bg-emerald-100 text-emerald-700' :
@@ -1880,6 +1885,7 @@ export default function ProfessionalReportsPage() {
                     <tr>
                       <th className="px-4 py-2 text-left">Número</th>
                       <th className="px-4 py-2 text-left">Solicitante</th>
+                      <th className="px-4 py-2 text-left">Área / Depto</th>
                       <th className="px-4 py-2 text-right">Monto</th>
                       <th className="px-4 py-2 text-center">Estado</th>
                       <th className="px-4 py-2 text-center">Acciones</th>
@@ -1890,6 +1896,7 @@ export default function ProfessionalReportsPage() {
                       <tr key={r.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-2 font-bold text-amber-600">{r.request_number || '-'}</td>
                         <td className="px-4 py-2 text-xs">{r.requested_by || '-'}</td>
+                        <td className="px-4 py-2 text-xs text-slate-500">{allDepartments.find(d => d.id === r.department_id)?.name || '-'}</td>
                         <td className="px-4 py-2 text-right font-semibold">Q {(r.estimated_amount || 0).toLocaleString()}</td>
                         <td className="px-4 py-2 text-center">
                           <span className={`px-2 py-1 rounded text-xs font-bold ${r.status === 'aprobado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
@@ -1915,6 +1922,7 @@ export default function ProfessionalReportsPage() {
                   <thead className="bg-gray-50 border-b">
                     <tr>
                       <th className="px-4 py-2 text-left">Número</th>
+                      <th className="px-4 py-2 text-left">Área / Depto</th>
                       <th className="px-4 py-2 text-right">Monto</th>
                       <th className="px-4 py-2 text-center">Estado</th>
                       <th className="px-4 py-2 text-center">Entrega</th>
@@ -1925,6 +1933,7 @@ export default function ProfessionalReportsPage() {
                     {(reportData.orders || []).slice(0, 10).map(o => (
                       <tr key={o.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-2 font-bold text-indigo-600">{o.order_number || '-'}</td>
+                        <td className="px-4 py-2 text-xs text-slate-500">{allDepartments.find(d => d.id === o.department_id)?.name || '-'}</td>
                         <td className="px-4 py-2 text-right font-semibold">Q {(o.total_amount || 0).toLocaleString()}</td>
                         <td className="px-4 py-2 text-center">
                           <span className={`px-2 py-1 rounded text-xs font-bold ${o.status === 'completado' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'
