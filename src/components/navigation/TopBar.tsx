@@ -26,8 +26,10 @@ export default function TopBar({ onToggleSidebar, user }: TopBarProps) {
     
     if (!license) return
 
-    // 1. Fetch initial pending requisitions count
+    // 1. Fetch initial pending requisitions count (Solo para quienes aprueban)
     const fetchPending = async () => {
+      if (!['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) return;
+
       const { count } = await supabase
         .from('requisitions')
         .select('*', { count: 'exact', head: true })
@@ -41,31 +43,44 @@ export default function TopBar({ onToggleSidebar, user }: TopBarProps) {
     
     fetchPending()
 
-    // 2. Subscribe to realtime inserts
-    const channel = supabase.channel('requisitions-inserts')
+    // 2. Subscribe to realtime inserts and updates
+    const channel = supabase.channel('requisitions-all')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*', // Escuchar INSERT y UPDATE
           schema: 'public',
           table: 'requisitions',
           filter: `license_id=eq.${license.id}`
         },
         (payload) => {
-          if (payload.new.status === 'pendiente') {
-            // Play sound
+          const newData = payload.new as any;
+          const notifyUser = (title: string, message: string) => {
             if (audioRef.current) {
               audioRef.current.play().catch(e => console.error("Audio play failed:", e))
             }
-            
-            // Add notification
             addNotification({
-              id: payload.new.id,
-              title: 'Nueva Requisición',
-              message: `Requisición ${payload.new.requisition_number || 'nueva'} creada.`,
-              created_at: payload.new.created_at || new Date().toISOString(),
+              id: newData.id + '-' + Date.now(), // ID único para evitar colisiones
+              title,
+              message,
+              created_at: newData.updated_at || newData.created_at || new Date().toISOString(),
               read: false
             })
+          };
+
+          if (payload.eventType === 'INSERT') {
+            if (newData.status === 'pendiente') {
+              // Notificar a jefes de compras y admins sobre nuevas requisiciones
+              if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
+                notifyUser('Nueva Requisición', `Requisición ${newData.requisition_number || ''} creada.`);
+              }
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            // Notificar al creador de la requisición sobre cualquier cambio de estado
+            if (newData.requested_by === user?.full_name) {
+               const statusCapitalized = newData.status ? newData.status.charAt(0).toUpperCase() + newData.status.slice(1) : 'Actualizada';
+               notifyUser(`Requisición ${statusCapitalized}`, `Tu requisición ${newData.requisition_number || ''} ahora está: ${newData.status}.`);
+            }
           }
         }
       )
@@ -74,7 +89,7 @@ export default function TopBar({ onToggleSidebar, user }: TopBarProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [license])
+  }, [license, user])
 
   const unreadCount = notifications.filter(n => !n.read).length
 
