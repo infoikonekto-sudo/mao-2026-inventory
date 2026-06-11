@@ -682,14 +682,18 @@ export async function getNextPurchaseRequestNumber(licenseId: string): Promise<s
 
     if (error) throw error
 
+    const date = new Date()
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
+    const prefix = `SOL-${yearMonth}-`
+
     if (!data || data.length === 0) {
-      return 'SOL-2026-0001'
+      return `${prefix}0001`
     }
 
-    // Buscar el número máximo de todos los registros
+    // Buscar el número máximo de todos los registros del mes actual
     let maxNumber = 0
     for (const item of data) {
-      if (item.request_number) {
+      if (item.request_number && item.request_number.startsWith(prefix)) {
         const parts = item.request_number.split('-')
         const num = parseInt(parts[2], 10)
         if (!isNaN(num) && num > maxNumber) {
@@ -700,10 +704,12 @@ export async function getNextPurchaseRequestNumber(licenseId: string): Promise<s
 
     const nextNumber = maxNumber + 1
     console.log(`getNextPurchaseRequestNumber: máximo encontrado=${maxNumber}, siguiente=${nextNumber}`)
-    return `SOL-2026-${String(nextNumber).padStart(4, '0')}`
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`
   } catch (error) {
     console.error('Error getting next purchase request number:', error)
-    return `SOL-2026-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
+    const date = new Date()
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
+    return `SOL-${yearMonth}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
   }
 }
 

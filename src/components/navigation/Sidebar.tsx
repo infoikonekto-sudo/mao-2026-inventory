@@ -3,6 +3,7 @@ import { Menu, LogOut, Settings, LayoutDashboard, Package, UploadCloud, ArrowRig
 import { Link, useLocation } from 'react-router-dom'
 import { ROLE_LABELS } from '@/constants'
 import { getMenuItemsForRole } from '@/utils/permissions'
+import { useNotificationsStore } from '@/stores/notificationsStore'
 
 interface SidebarProps {
   isOpen: boolean
@@ -13,6 +14,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onToggle, user, onLogout }: SidebarProps) {
   const location = useLocation()
+  const { pendingRequisitions } = useNotificationsStore()
 
   // Definir todos los items posibles con iconos de lucide
   const allMenuItems = [
@@ -108,6 +110,9 @@ export default function Sidebar({ isOpen, onToggle, user, onLogout }: SidebarPro
           {menuItems.map((item) => {
             const isActive = location.pathname === item.href || (item.href !== '/dashboard/' && location.pathname.startsWith(item.href))
             const Icon = item.icon
+            const isRequisitions = item.id === 'requisitions'
+            const hasPending = isRequisitions && pendingRequisitions > 0
+
             return (
               <Link
                 key={item.href}
@@ -115,13 +120,20 @@ export default function Sidebar({ isOpen, onToggle, user, onLogout }: SidebarPro
                 className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm transition-all duration-200 ${
                   isActive 
                     ? 'bg-white text-blue-700 shadow-sm border border-gray-100' 
-                    : 'text-gray-500 hover:bg-white/60 hover:text-gray-900'
+                    : hasPending
+                      ? 'bg-cyan-100/50 shadow-[0_0_15px_rgba(0,255,255,0.4)] border border-cyan-400 text-cyan-700'
+                      : 'text-gray-500 hover:bg-white/60 hover:text-gray-900'
                 }`}
               >
-                <div className={`${isActive ? 'text-blue-600' : 'text-gray-400'}`}>
-                  <Icon size={18} strokeWidth={isActive ? 2.5 : 2} />
+                <div className={`${isActive ? 'text-blue-600' : hasPending ? 'text-cyan-600' : 'text-gray-400'}`}>
+                  <Icon size={18} strokeWidth={isActive || hasPending ? 2.5 : 2} />
                 </div>
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {hasPending && (
+                  <span className="bg-cyan-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-pulse">
+                    {pendingRequisitions}
+                  </span>
+                )}
               </Link>
             )
           })}

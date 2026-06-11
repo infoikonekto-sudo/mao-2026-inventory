@@ -513,10 +513,13 @@ export default function RequisitionsPage() {
     }
   }
 
-  const filteredInventory = inventory.filter(i =>
-
-    i.name.toLowerCase().includes(itemSearch.toLowerCase())
-  )
+  const filteredInventory = inventory.filter(i => {
+    // Si es profesor, ocultar ítems con stock 0 o menor
+    if (user?.role === 'profesor' && i.current_stock <= 0) {
+      return false
+    }
+    return i.name.toLowerCase().includes(itemSearch.toLowerCase())
+  })
 
   if (loading) {
     return <div className="text-center py-10">Cargando requisiciones...</div>
@@ -634,55 +637,62 @@ export default function RequisitionsPage() {
                 <h4 className="font-bold text-gray-700 uppercase tracking-widest text-sm">Agrega Productos</h4>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Buscar en Inventario</label>
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Buscar en Inventario</label>
                 <input
                   type="text"
-                  placeholder="Buscar producto..."
+                  placeholder="Escribe para buscar un producto..."
                   value={itemSearch}
                   onChange={(e) => setItemSearch(e.target.value)}
-                  className="input-base"
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-base font-medium transition-all shadow-inner"
                 />
-                <select
-                  value={selectedItemId}
-                  onChange={(e) => {
-                    const id = e.target.value
-                    setSelectedItemId(id)
-                    setNewItemName('')
-                    // Auto-detect unit and units_per_package from inventory
-                    if (id) {
-                      const inv = inventory.find(i => i.id === id)
-                      if (inv) {
-                        const invUnit = inv.unit_of_measure || 'unidades'
-                        setNewItemUnit(invUnit)
-                        setNewItemUnitsPerPackage(inv.units_per_package || 1)
+                <div className="relative mt-3">
+                  <select
+                    value={selectedItemId}
+                    onChange={(e) => {
+                      const id = e.target.value
+                      setSelectedItemId(id)
+                      setNewItemName('')
+                      if (id) {
+                        const inv = inventory.find(i => i.id === id)
+                        if (inv) {
+                          const invUnit = inv.unit_of_measure || 'unidades'
+                          setNewItemUnit(invUnit)
+                          setNewItemUnitsPerPackage(inv.units_per_package || 1)
+                        }
                       }
-                    }
-                  }}
-                  className="input-base mt-2"
-                  title="Seleccione un artículo del inventario"
-                  aria-label="Seleccionar artículo"
-                >
-                  <option value="">-- Selecciona del inventario --</option>
-                  {filteredInventory.map(item => {
-                    const u = item.unit_of_measure || 'unidades'
-                    const upp = item.units_per_package || 1
-                    const extra = PACKAGE_UNITS.includes(u) && upp > 1
-                      ? ` — ${upp} uds/${u.slice(0, -1)}`
-                      : ''
-                    return (
-                      <option key={item.id} value={item.id}>
-                        {item.name} ({item.current_stock} {u}{extra})
-                      </option>
-                    )
-                  })}
-                </select>
+                    }}
+                    className="w-full appearance-none bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-semibold transition-all cursor-pointer hover:border-gray-300"
+                    title="Seleccione un artículo del inventario"
+                    aria-label="Seleccionar artículo"
+                  >
+                    <option value="">-- Selecciona del inventario --</option>
+                    {filteredInventory.map(item => {
+                      let displayLabel = item.name
+                      if (user?.role !== 'profesor') {
+                        displayLabel = `${item.name} (Stock: ${item.current_stock})`
+                      }
+                      return (
+                        <option key={item.id} value={item.id}>
+                          {displayLabel}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
+                </div>
               </div>
 
-              <div className="text-center text-sm text-gray-500">- O -</div>
+              <div className="flex items-center justify-center my-4">
+                <div className="h-px bg-gray-200 flex-1"></div>
+                <span className="px-4 text-xs font-black text-gray-400 uppercase tracking-widest">O Agrega</span>
+                <div className="h-px bg-gray-200 flex-1"></div>
+              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ítem Personalizado</label>
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ítem Personalizado</label>
                 <input
                   type="text"
                   placeholder="Nombre del material"
@@ -691,7 +701,7 @@ export default function RequisitionsPage() {
                     setNewItemName(e.target.value)
                     setSelectedItemId('')
                   }}
-                  className="input-base"
+                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-base font-medium transition-all shadow-inner"
                   title="Ingrese el nombre del artículo personalizado"
                 />
               </div>

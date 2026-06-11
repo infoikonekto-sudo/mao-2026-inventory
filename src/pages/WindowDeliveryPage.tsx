@@ -314,7 +314,10 @@ export default function WindowDeliveryPage() {
     const filteredItems = useMemo(() => {
         const normalize = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
         const term = normalize(searchTerm || '')
-        return items.filter(i => normalize(i.name || '').includes(term) || normalize(i.item_code || '').includes(term) || normalize(i.category || '').includes(term))
+        return items.filter(i => {
+            if (i.current_stock <= 0) return false
+            return normalize(i.name || '').includes(term) || normalize(i.item_code || '').includes(term) || normalize(i.category || '').includes(term)
+        })
     }, [items, searchTerm])
 
     const startCameraScanner = async () => {
