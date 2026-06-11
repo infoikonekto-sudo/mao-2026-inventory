@@ -19,7 +19,7 @@ export default function CostCentersPage() {
         name: '',
         description: '',
         budget_allocated: 0,
-        department: '',
+        department_id: '',
         budget_id: ''
     })
 
@@ -88,7 +88,7 @@ export default function CostCentersPage() {
                 code: formData.code.toUpperCase(),
                 name: formData.name,
                 description: formData.description,
-                department: formData.department || null,
+                department_id: formData.department_id || null,
                 budget_allocated: formData.budget_allocated,
                 budget_id: formData.budget_id || null, // Link to Master Budget
                 updated_at: new Date().toISOString()
@@ -115,7 +115,7 @@ export default function CostCentersPage() {
 
             setShowForm(false)
             setEditingId(null)
-            setFormData({ code: '', name: '', description: '', budget_allocated: 0, department: '', budget_id: '' })
+            setFormData({ code: '', name: '', description: '', budget_allocated: 0, department_id: '', budget_id: '' })
             loadData()
         } catch (error: any) {
             console.error('Error saving cost center:', error)
@@ -135,7 +135,7 @@ export default function CostCentersPage() {
             code: cc.code,
             name: cc.name,
             description: cc.description || '',
-            department: cc.department || '',
+            department_id: cc.department_id || '',
             budget_allocated: cc.budget_allocated,
             budget_id: cc.budget_id || ''
         })
@@ -185,7 +185,7 @@ export default function CostCentersPage() {
     const cancelForm = () => {
         setShowForm(false)
         setEditingId(null)
-        setFormData({ code: '', name: '', description: '', budget_allocated: 0, department: '', budget_id: '' })
+        setFormData({ code: '', name: '', description: '', budget_allocated: 0, department_id: '', budget_id: '' })
     }
 
     if (!canManage) {
@@ -343,9 +343,9 @@ export default function CostCentersPage() {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
                             <select
-                                value={formData.department}
-                                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                className="input-base"
+                                value={formData.department_id || ''}
+                                onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             >
                                 <option value="">Ninguno (Sin departamento)</option>
                                 <option value="Académico">Académico</option>

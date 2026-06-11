@@ -34,6 +34,7 @@ export default function ProfessorDashboard() {
   const [requisitionsData, setRequisitionsData] = useState<any[]>([])
   const [requestsData, setRequestsData] = useState<any[]>([])
   const [timelineData, setTimelineData] = useState<any[]>([])
+  const [departmentName, setDepartmentName] = useState<string>('')
 
   useEffect(() => {
     loadDashboardData()
@@ -44,6 +45,20 @@ export default function ProfessorDashboard() {
 
     try {
       setLoading(true)
+
+      // 0. Obtener el área/departamento del usuario
+      const { data: userData } = await supabase
+        .from('users')
+        .select('department_id, departments(name)')
+        .eq('id', user.id)
+        .single()
+
+      const deptData: any = userData?.departments;
+      if (deptData && !Array.isArray(deptData) && deptData.name) {
+        setDepartmentName(deptData.name)
+      } else if (Array.isArray(deptData) && deptData[0]?.name) {
+        setDepartmentName(deptData[0].name)
+      }
 
       // 1. Cargar requisiciones del usuario
       const { data: requisitions } = await supabase
@@ -152,6 +167,11 @@ export default function ProfessorDashboard() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Hola, {user?.full_name?.split(' ')[0] || 'Profesor'} 👋</h1>
+            {departmentName && (
+               <p className="text-blue-600 font-bold mt-1 text-sm md:text-base uppercase tracking-widest flex items-center gap-2">
+                 Área: {departmentName}
+               </p>
+            )}
             <p className="text-gray-500 font-medium mt-1 text-sm md:text-base">Aquí tienes el resumen de tu actividad de inventario y compras</p>
           </div>
         </div>

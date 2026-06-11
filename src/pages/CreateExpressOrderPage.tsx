@@ -43,7 +43,7 @@ export default function CreateExpressOrderPage() {
     useEffect(() => {
         if (license && user) {
             loadData()
-            setDepartment(user.department || '')
+            setDepartment(user.department_id || '')
         }
     }, [license, user])
 

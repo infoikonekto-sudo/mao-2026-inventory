@@ -62,16 +62,19 @@ const UNIT_OPTIONS = [
     { value: 'juegos', label: 'Juegos' },
 ]
 
+import { Department } from '@/types'
+
 export default function WindowDeliveryPage() {
     const { user, license } = useAuthStore()
 
     // Data State
     const [items, setItems] = useState<InventoryItem[]>([])
+    const [departments, setDepartments] = useState<Department[]>([])
     const [loading, setLoading] = useState(true)
 
     // Form State
     const [receiverName, setReceiverName] = useState('')
-    const [department, setDepartment] = useState('')
+    const [departmentId, setDepartmentId] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
     const [cart, setCart] = useState<CartItem[]>([])
     const [step, setStep] = useState<1 | 2 | 3>(1) // 1: Selección, 2: Firma, 3: Historial Global
@@ -110,15 +113,21 @@ export default function WindowDeliveryPage() {
         if (!license?.id) return
         try {
             setLoading(true)
-            const [inventoryData] = await Promise.all([
+            const [inventoryData, deptsData] = await Promise.all([
                 supabase
                     .from('inventory_items')
                     .select('id, item_code, name, category, current_stock, unit_of_measure, units_per_package, location')
                     .eq('license_id', license.id)
                     .eq('is_active', true)
+                    .order('name'),
+                supabase
+                    .from('departments')
+                    .select('*')
+                    .eq('license_id', license.id)
                     .order('name')
             ])
             setItems(inventoryData.data || [])
+            setDepartments(deptsData.data || [])
         } catch (error) {
             console.error('Error loading data:', error)
             toast.error('Error cargando inventario')
@@ -255,8 +264,8 @@ export default function WindowDeliveryPage() {
     }
 
     const handleFinalize = async () => {
-        if (!receiverName || !department) {
-            toast.error('Complete el formulario de receptor')
+        if (!receiverName || !departmentId) {
+            toast.error('Complete el formulario de receptor y área')
             return
         }
         if (!hasSignature) {
@@ -266,11 +275,13 @@ export default function WindowDeliveryPage() {
 
         try {
             const signatureDataUrl = canvasRef.current?.toDataURL() || ''
+            const deptName = departments.find(d => d.id === departmentId)?.name || 'Desconocido'
 
             await createDelivery({
                 license_id: license!.id,
                 receiver_name: receiverName,
-                department,
+                department: deptName,
+                department_id: departmentId,
                 items: cart.map(i => {
                     const consumed = getStockUnitsConsumed(i.quantityToAdd, i.dispenseUnit, i.unit_of_measure, i.units_per_package || 1)
                     return {
@@ -289,7 +300,7 @@ export default function WindowDeliveryPage() {
 
             await generateWarehouseExitPDF(
                 receiverName,
-                department,
+                deptName,
                 cart.map(i => ({
                     name: i.name,
                     quantityToAdd: i.quantityToAdd,
@@ -301,7 +312,7 @@ export default function WindowDeliveryPage() {
             toast.success('Despacho finalizado con éxito')
             setCart([])
             setReceiverName('')
-            setDepartment('')
+            setDepartmentId('')
             setHasSignature(false)
             setStep(1)
             loadData() 
@@ -471,7 +482,7 @@ export default function WindowDeliveryPage() {
                             <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Receptor Autorizado</span>
                                 <p className="text-xl font-black text-gray-800">{receiverName}</p>
-                                <p className="text-xs text-blue-600 font-bold uppercase mt-1">{department}</p>
+                                <p className="text-xs text-blue-600 font-bold uppercase mt-1">{departments.find(d => d.id === departmentId)?.name || ''}</p>
                             </div>
                             <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100 text-right">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Total Artículos</span>
@@ -638,12 +649,16 @@ export default function WindowDeliveryPage() {
                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Departamento / Área</label>
                                     <div className="relative">
                                         <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
-                                        <input
-                                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 font-bold text-gray-700"
-                                            placeholder="Ej. Administración, Ventas..."
-                                            value={department}
-                                            onChange={e => setDepartment(e.target.value)}
-                                        />
+                                        <select
+                                            value={departmentId}
+                                            onChange={(e) => setDepartmentId(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 font-bold text-gray-700 appearance-none"
+                                        >
+                                            <option value="">Seleccione el Área/Departamento...</option>
+                                            {departments.map(dept => (
+                                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 </div>
                             </div>

@@ -13,14 +13,18 @@ interface User {
   full_name: string
   email: string
   role: string
-  department: string
+  department?: string
+  department_id?: string
   is_active: boolean
   custom_permissions: string[]
 }
 
+import { Department } from '@/types'
+
 export default function UsersManagementPage() {
   const { user, license } = useAuthStore()
   const [users, setUsers] = useState<User[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
 
   const [showModal, setShowModal] = useState(false)
@@ -36,29 +40,39 @@ export default function UsersManagementPage() {
   })
 
   useEffect(() => {
-    loadUsers()
+    loadData()
   }, [])
 
-  const loadUsers = async () => {
+  const loadData = async () => {
     try {
       if (!license?.id) return
-      const { data: usersData, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('license_id', license.id)
-        .order('created_at', { ascending: false })
+      const [usersRes, deptsRes] = await Promise.all([
+        supabase
+          .from('users')
+          .select('*')
+          .eq('license_id', license.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('departments')
+          .select('*')
+          .eq('license_id', license.id)
+          .order('name', { ascending: true })
+      ])
 
-      if (error) throw error
+      if (usersRes.error) throw usersRes.error
+      if (deptsRes.error) throw deptsRes.error
 
-      if (error) throw error
-      setUsers(usersData || [])
+      setUsers(usersRes.data || [])
+      setDepartments(deptsRes.data || [])
     } catch (error) {
-      console.error('Error loading users:', error)
-      toast.error('Error cargando usuarios')
+      console.error('Error loading data:', error)
+      toast.error('Error cargando datos')
     } finally {
       setLoading(false)
     }
   }
+
+  // Removed loadUsers function
 
   const handleOpenModal = (userItem?: User) => {
     if (userItem) {
@@ -68,7 +82,7 @@ export default function UsersManagementPage() {
         email: userItem.email || '',
         auth_code: userItem.auth_code,
         role: userItem.role,
-        department: userItem.department || '',
+        department: userItem.department_id || userItem.department || '',
         custom_permissions: userItem.custom_permissions || [],
       })
     } else {
@@ -102,7 +116,7 @@ export default function UsersManagementPage() {
             full_name: formData.full_name,
             email: formData.email,
             role: formData.role,
-            department: formData.department,
+            department_id: formData.department || null,
             custom_permissions: formData.custom_permissions,
           })
           .eq('id', editingId)
@@ -119,7 +133,7 @@ export default function UsersManagementPage() {
             email: formData.email,
             auth_code: formData.auth_code.toUpperCase(),
             role: formData.role,
-            department: formData.department,
+            department_id: formData.department || null,
             custom_permissions: formData.custom_permissions,
             is_active: true,
           }])
@@ -128,7 +142,7 @@ export default function UsersManagementPage() {
         toast.success('Usuario creado')
       }
 
-      await loadUsers()
+      await loadData()
       setShowModal(false)
     } catch (error) {
       console.error('Error saving user:', error)
@@ -147,7 +161,7 @@ export default function UsersManagementPage() {
 
       if (error) throw error
       toast.success('Usuario eliminado')
-      await loadUsers()
+      await loadData()
     } catch (error) {
       console.error('Error deleting user:', error)
       toast.error('Error eliminando usuario')
@@ -236,7 +250,9 @@ export default function UsersManagementPage() {
                         </span>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{userItem.department || '-'}</td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {departments.find(d => d.id === userItem.department_id)?.name || userItem.department || '-'}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${userItem.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {userItem.is_active ? 'Activo' : 'Inactivo'}
@@ -341,21 +357,18 @@ export default function UsersManagementPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Departamento</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Área / Departamento</label>
                 <select
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
-                  <option value="">Sin departamento</option>
-                  <option value="Académico">Académico</option>
-                  <option value="Administrativo">Administrativo</option>
-                  <option value="Finanzas">Finanzas</option>
-                  <option value="Mantenimiento">Mantenimiento</option>
-                  <option value="Servicios Generales">Servicios Generales</option>
-                  <option value="Tecnología">Tecnología</option>
+                  <option value="">Sin área asignada</option>
+                  {departments.map(dept => (
+                    <option key={dept.id} value={dept.id}>{dept.name}</option>
+                  ))}
                 </select>
-                <p className="text-xs text-gray-500 mt-1">Auto-asigna centro de costo al crear requisiciones</p>
+                <p className="text-xs text-gray-500 mt-1">El panel del usuario se personalizará para esta área.</p>
               </div>
 
               {/* Permisos Personalizados */}

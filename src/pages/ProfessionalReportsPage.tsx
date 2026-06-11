@@ -94,17 +94,33 @@ export default function ProfessionalReportsPage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // Cost center filter
+  // Cost center and Department filters
   const [selectedCostCenter, setSelectedCostCenter] = useState<string>('')
   const [allCostCenters, setAllCostCenters] = useState<any[]>([])
+  
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('')
+  const [allDepartments, setAllDepartments] = useState<any[]>([])
 
   useEffect(() => {
     loadCostCenters()
+    loadDepartments()
   }, [])
 
   useEffect(() => {
     loadReportData()
-  }, [reportType, startDate, endDate, selectedCostCenter])
+  }, [reportType, startDate, endDate, selectedCostCenter, selectedDepartment])
+
+  const loadDepartments = async () => {
+    try {
+      const { data } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name')
+      setAllDepartments(data || [])
+    } catch (error) {
+      console.error('Error loading departments:', error)
+    }
+  }
 
   const loadCostCenters = async () => {
     try {
@@ -188,6 +204,7 @@ export default function ProfessionalReportsPage() {
         if (startDate) query = query.gte('created_at', new Date(startDate).toISOString())
         if (endDate) query = query.lte('created_at', new Date(endDate + 'T23:59:59').toISOString())
         if (selectedCostCenter) query = query.eq('cost_center_id', selectedCostCenter)
+        if (selectedDepartment) query = query.eq('department_id', selectedDepartment)
 
         const { data: reqs } = await query.order('created_at', { ascending: false })
 
@@ -210,6 +227,7 @@ export default function ProfessionalReportsPage() {
         if (startDate) query = query.gte('created_at', new Date(startDate).toISOString())
         if (endDate) query = query.lte('created_at', new Date(endDate + 'T23:59:59').toISOString())
         if (selectedCostCenter) query = query.eq('cost_center_id', selectedCostCenter)
+        if (selectedDepartment) query = query.eq('department_id', selectedDepartment)
 
         const { data: reqs } = await query.order('created_at', { ascending: false })
 
@@ -232,6 +250,7 @@ export default function ProfessionalReportsPage() {
         if (startDate) query = query.gte('created_at', new Date(startDate).toISOString())
         if (endDate) query = query.lte('created_at', new Date(endDate + 'T23:59:59').toISOString())
         if (selectedCostCenter) query = query.eq('cost_center_id', selectedCostCenter)
+        if (selectedDepartment) query = query.eq('department_id', selectedDepartment)
 
         const { data: orders } = await query.order('created_at', { ascending: false })
 
@@ -1018,12 +1037,36 @@ export default function ProfessionalReportsPage() {
               onClick={() => {
                 setStartDate('')
                 setEndDate('')
+                setSelectedCostCenter('')
+                setSelectedDepartment('')
               }}
               className="px-6 py-3 bg-gray-50 text-gray-400 rounded-2xl hover:bg-gray-100 transition-all font-black text-[10px] uppercase tracking-widest"
             >
               Limpiar
             </button>
         </div>
+
+        {/* Filtro de Área / Departamento (para reportes relevantes) */}
+        {(reportType === 'requisitions' || reportType === 'requests' || reportType === 'orders') && (
+          <div className="w-full md:w-64 space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
+              📍 Área / Departamento
+            </label>
+            <div className="relative">
+                <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                <select
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500/20 font-bold text-gray-700 appearance-none"
+                >
+                    <option value="">Todas las Áreas</option>
+                    {allDepartments.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                </select>
+            </div>
+          </div>
+        )}
 
         {/* Filtro de Centro de Costo (para todos los reportes relevantes) */}
         {(reportType === 'requisitions' || reportType === 'requests' || reportType === 'orders' || reportType === 'cost-centers') && (

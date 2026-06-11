@@ -24,6 +24,16 @@ export interface License {
   updated_at: string;
 }
 
+// Departments
+export interface Department {
+  id: string;
+  license_id: string;
+  name: string;
+  budget_limit?: number;
+  status: 'activo' | 'inactivo';
+  created_at: string;
+}
+
 // Users
 export interface User {
   id: string;
@@ -34,7 +44,7 @@ export interface User {
   role: UserRole;
   profile_photo_url?: string;
   phone?: string;
-  department?: string;
+  department_id?: string;
   city?: string;
   bio?: string;
   is_active: boolean;
@@ -107,6 +117,7 @@ export interface InventoryMovement {
   reference_type?: string;
   notes?: string;
   invoice_photo_urls?: string[];
+  department_id?: string;
   created_by: string;
   created_at: string;
 }
@@ -120,7 +131,7 @@ export interface Requisition {
   license_id: string;
   requisition_number: string;
   requested_by: string;
-  department?: string;
+  department_id?: string;
   status: RequisitionStatus;
   priority: RequisitionPriority;
   approved_by?: string;
@@ -150,7 +161,7 @@ export interface PurchaseRequest {
   license_id: string;
   request_number: string;
   requested_by: string;
-  department?: string;
+  department_id?: string;
   status: PurchaseRequestStatus;
   justification?: string;
   estimated_amount?: number;

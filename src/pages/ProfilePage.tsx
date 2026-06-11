@@ -44,7 +44,7 @@ export default function ProfilePage() {
           name: data.full_name || '',
           email: data.email || '',
           phone: data.phone || '',
-          department: data.department || '',
+          department_id: data.department_id || '',
           role: data.role || '',
           joinDate: new Date(data.created_at).toLocaleDateString('es-GT'),
           bio: data.bio || '',
@@ -137,7 +137,7 @@ export default function ProfilePage() {
         full_name: edited.name,
         email: edited.email,
         phone: edited.phone,
-        department: edited.department,
+        department_id: edited.department_id,
         city: edited.city,
         bio: edited.bio,
         profile_photo_url: edited.profilePhotoUrl,
@@ -159,7 +159,7 @@ export default function ProfilePage() {
           full_name: edited.name,
           email: edited.email,
           phone: edited.phone,
-          department: edited.department,
+          department_id: edited.department_id,
           city: edited.city,
           bio: edited.bio,
           profile_photo_url: edited.profilePhotoUrl
@@ -321,7 +321,7 @@ export default function ProfilePage() {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 text-sm font-medium text-gray-500">
               <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                 <MapPin size={16} className="text-blue-500" />
-                {displayData.department}
+                {displayData.department_id}
               </div>
               <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                 <Calendar size={16} className="text-blue-500" />

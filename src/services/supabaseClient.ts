@@ -533,28 +533,30 @@ export async function createPurchaseRequest(data: {
     // 1. Obtener el departamento del usuario
     const { data: userData } = await supabase
       .from('users')
-      .select('department')
+      .select('department_id')
       .eq('id', data.user_id)
       .single();
 
     let costCenterId = null;
+    let departmentId = null;
 
     // 2. Buscar Cost Center asociado al departamento (si existe)
-    if (userData?.department) {
+    if (userData?.department_id) {
+      departmentId = userData.department_id;
       const { data: ccData } = await supabase
         .from('cost_centers')
         .select('id')
         .eq('license_id', data.license_id)
-        .eq('department', userData.department)
+        .eq('department_id', departmentId)
         .eq('is_active', true)
         .limit(1)
         .maybeSingle(); // maybeSingle para no lanzar error si no hay
 
       if (ccData) {
         costCenterId = ccData.id;
-        console.log('✅ Auto-assigned Cost Center:', costCenterId, 'for Dept:', userData.department);
+        console.log('✅ Auto-assigned Cost Center:', costCenterId, 'for Dept ID:', departmentId);
       } else {
-        console.warn('⚠️ No active Cost Center found for department:', userData.department);
+        console.warn('⚠️ No active Cost Center found for department ID:', departmentId);
       }
     }
 
@@ -568,6 +570,7 @@ export async function createPurchaseRequest(data: {
         justification: data.justification,
         estimated_amount: data.estimated_amount,
         status: data.status || 'pendiente',
+        department_id: departmentId,
         cost_center_id: costCenterId // Assign auto-detected ID
       }])
       .select()
@@ -1057,6 +1060,7 @@ export async function createDelivery(data: {
   license_id: string
   receiver_name: string
   department: string
+  department_id?: string
   items: any[]
   signatureDataUrl?: string // Canvas data URL
   delivered_by: string
@@ -1097,7 +1101,8 @@ export async function createDelivery(data: {
                 relatedType: 'delivery',
                 relatedId: deliveryId,
                 justification: `Entrega a ${data.receiver_name} (${data.department})`,
-                purpose: 'Despacho Ventanilla / Entrega Express'
+                purpose: 'Despacho Ventanilla / Entrega Express',
+                departmentId: data.department_id
               }
             );
           } catch (stockError) {
@@ -2423,6 +2428,7 @@ export async function createInventoryMovement(data: {
   notes?: string
   justification?: string
   purpose?: string
+  department_id?: string
 }) {
   try {
     const payload: any = {
@@ -2443,6 +2449,7 @@ export async function createInventoryMovement(data: {
       notes: data.notes || null,
       justification: data.justification || null,
       purpose: data.purpose || null,
+      department_id: data.department_id || null,
     }
 
     const { data: result, error } = await supabase
@@ -2488,6 +2495,7 @@ export async function updateInventoryStock(
     notes?: string;
     justification?: string;
     purpose?: string;
+    departmentId?: string;
   }
 ) {
   try {
@@ -2525,6 +2533,7 @@ export async function updateInventoryStock(
         notes: opts?.notes,
         justification: opts?.justification,
         purpose: opts?.purpose,
+        department_id: opts?.departmentId,
       })
     } catch (movErr) {
       console.warn('No se pudo registrar movimiento de inventario:', movErr)
@@ -3141,7 +3150,7 @@ export interface CostCenter {
   code: string
   name: string
   description?: string
-  department?: string | null
+  department_id?: string | null
   budget_id?: string | null // Linked Master Budget
   budget_allocated: number
   budget_spent: number
@@ -3345,21 +3354,23 @@ export async function createRequisitionWithItems(
   items: RequisitionItem[]
 ) {
   try {
-    // 0. Get user's department for auto CC assignment
+    // 0. Get user's department_id for auto CC assignment and tracking
     let cost_center_id = null
+    let department_id = null
     const { data: userData } = await supabase
       .from('users')
-      .select('department')
+      .select('department_id')
       .eq('id', userId)
       .single()
 
-    if (userData?.department) {
-      // Find cost center matching user's department
+    if (userData?.department_id) {
+      department_id = userData.department_id
+      // Find cost center matching user's department_id
       const { data: costCenter } = await supabase
         .from('cost_centers')
         .select('id')
         .eq('license_id', licenseId)
-        .eq('department', userData.department)
+        .eq('department_id', department_id)
         .eq('is_active', true)
         .single()
 
@@ -3384,6 +3395,7 @@ export async function createRequisitionWithItems(
         justification: requisitionData.justification,
         estimated_amount: requisitionData.estimated_amount,
         cost_center_id: cost_center_id,
+        department_id: department_id,
         status: 'pendiente'
       })
       .select()
