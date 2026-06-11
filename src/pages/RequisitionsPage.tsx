@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, Search, CheckCircle, XCircle, Download, X, ShoppingCart, Package } from 'lucide-react'
+import { Plus, Search, CheckCircle, XCircle, Download, X, ShoppingCart, Package, Printer } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { useAuthStore } from '@/stores/authStore'
 import {
@@ -410,6 +410,79 @@ export default function RequisitionsPage() {
 
   const stopDrawing = () => {
     setIsDrawing(false)
+  }
+
+  // Print requisition items
+  const handlePrintRequisition = async (req: any) => {
+    try {
+      const items = await getRequisitionItems(req.id)
+      const printWindow = window.open('', '_blank', 'width=800,height=600')
+      if (!printWindow) return
+
+      const itemRows = items.map((item: any) => `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;">${item.item_name || 'Sin nombre'}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;">${item.quantity_requested}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;">${item.unit_of_measure || 'unidades'}</td>
+        </tr>
+      `).join('')
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Requisición ${req.requisition_number}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
+            h1 { font-size: 22px; margin-bottom: 4px; }
+            .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+            .info-item label { font-size: 11px; text-transform: uppercase; color: #888; display: block; }
+            .info-item span { font-weight: bold; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; }
+            thead { background: #1d4ed8; color: white; }
+            thead th { padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }
+            tbody tr:nth-child(even) { background: #f8f9fa; }
+            .footer { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+            .sign-box { border-top: 2px solid #222; padding-top: 8px; text-align: center; font-size: 12px; color: #555; }
+            @media print { body { padding: 0; } }
+          </style>
+        </head>
+        <body>
+          <h1>📋 Requisición de Materiales</h1>
+          <p class="subtitle">Colegio Manos a la Obra — Sistema MAO 2026</p>
+          <div class="info-grid">
+            <div class="info-item"><label>Número</label><span>${req.requisition_number}</span></div>
+            <div class="info-item"><label>Estado</label><span>${req.status.replace(/_/g, ' ').toUpperCase()}</span></div>
+            <div class="info-item"><label>Solicitado por</label><span>${req.users?.full_name || 'Desconocido'}</span></div>
+            <div class="info-item"><label>Prioridad</label><span>${req.priority?.toUpperCase()}</span></div>
+            <div class="info-item"><label>Justificación</label><span>${req.justification || '—'}</span></div>
+            <div class="info-item"><label>Fecha de aprobación</label><span>${new Date().toLocaleDateString('es-GT')}</span></div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Descripción del Artículo</th>
+                <th style="text-align:center;">Cantidad</th>
+                <th>Unidad</th>
+              </tr>
+            </thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+          <div class="footer">
+            <div class="sign-box">Firma del Solicitante</div>
+            <div class="sign-box">Firma del Autorizador (Jefe de Compras)</div>
+          </div>
+        </body>
+        </html>
+      `)
+      printWindow.document.close()
+      printWindow.focus()
+      setTimeout(() => printWindow.print(), 500)
+    } catch (error) {
+      console.error('Error imprimiendo:', error)
+      toast.error('Error al generar la impresión')
+    }
   }
 
   const clearSignature = () => {
@@ -950,6 +1023,16 @@ export default function RequisitionsPage() {
                           Rechazar
                         </button>
                       </>
+                    )}
+                    {req.status === 'aprobada' && (
+                      <button
+                        onClick={() => handlePrintRequisition(req)}
+                        className="text-purple-600 hover:text-purple-800 text-xs font-medium flex items-center gap-1"
+                        title="Imprimir listado aprobado"
+                      >
+                        <Printer size={16} />
+                        Imprimir
+                      </button>
                     )}
                     {canApprove && req.status === 'aprobada' && (
                       <button
