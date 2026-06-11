@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Search, Edit2, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { supabase } from '@/services/supabaseClient'
+import { useAuthStore } from '@/stores/authStore'
 import toast from 'react-hot-toast'
 
 interface Department {
@@ -11,6 +12,7 @@ interface Department {
 }
 
 export default function DepartmentsPage() {
+  const { license } = useAuthStore()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -23,10 +25,12 @@ export default function DepartmentsPage() {
   }, [])
 
   const fetchDepartments = async () => {
+    if (!license) return
     try {
       const { data, error } = await supabase
         .from('departments')
         .select('*')
+        .eq('license_id', license.id)
         .order('name')
 
       if (error) throw error
@@ -41,7 +45,7 @@ export default function DepartmentsPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!formData.name.trim()) return
+    if (!formData.name.trim() || !license) return
 
     try {
       if (editingId) {
@@ -49,12 +53,13 @@ export default function DepartmentsPage() {
           .from('departments')
           .update({ name: formData.name })
           .eq('id', editingId)
+          .eq('license_id', license.id)
         if (error) throw error
         toast.success('Departamento actualizado')
       } else {
         const { error } = await supabase
           .from('departments')
-          .insert([{ name: formData.name }])
+          .insert([{ name: formData.name, license_id: license.id }])
         if (error) throw error
         toast.success('Departamento creado')
       }
