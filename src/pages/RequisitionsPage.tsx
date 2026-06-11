@@ -876,7 +876,9 @@ export default function RequisitionsPage() {
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Usuario</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Centro de Costo</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Ítems</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Monto</th>
+                {user?.role !== 'profesor' && (
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Monto</th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Prioridad</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Acciones</th>
@@ -904,7 +906,9 @@ export default function RequisitionsPage() {
                       Ver detalles
                     </button>
                   </td>
-                  <td className="px-6 py-4 text-sm font-semibold">Q {req.estimated_amount || 0}</td>
+                  {user?.role !== 'profesor' && (
+                    <td className="px-6 py-4 text-sm font-semibold">Q {req.estimated_amount || 0}</td>
+                  )}
                   <td className="px-6 py-4 text-sm">
                     <span
                       className="px-2 py-1 rounded text-white text-xs font-medium"
@@ -1094,10 +1098,12 @@ export default function RequisitionsPage() {
                   {showDetailsModal.cost_center_code || 'Sin asignar'}
                 </span>
               </div>
-              <div>
-                <span className="text-xs font-semibold text-gray-600">Monto Estimado:</span>
-                <span className="ml-2 text-sm font-semibold">Q {showDetailsModal.estimated_amount || 0}</span>
-              </div>
+              {user?.role !== 'profesor' && (
+                <div>
+                  <span className="text-xs font-semibold text-gray-600">Monto Estimado:</span>
+                  <span className="ml-2 text-sm font-semibold">Q {showDetailsModal.estimated_amount || 0}</span>
+                </div>
+              )}
             </div>
 
             <div className="mb-4">
@@ -1120,8 +1126,12 @@ export default function RequisitionsPage() {
                         <th className="px-4 py-2 text-right text-xs font-semibold text-gray-700">Solicitado</th>
                         <th className="px-4 py-2 text-right text-xs font-semibold text-gray-700">Entregado</th>
                         <th className="px-4 py-2 text-left text-xs font-semibold text-gray-700">Unidad</th>
-                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-700">Costo Unit.</th>
-                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-700">Subtotal</th>
+                        {user?.role !== 'profesor' && (
+                          <>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-700">Costo Unit.</th>
+                            <th className="px-4 py-2 text-right text-xs font-semibold text-gray-700">Subtotal</th>
+                          </>
+                        )}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -1133,12 +1143,16 @@ export default function RequisitionsPage() {
                             {item.quantity_delivered || 0}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">{item.unit_of_measure}</td>
-                          <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                            Q {item.estimated_unit_cost || 0}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
-                            Q {((item.estimated_unit_cost || 0) * item.quantity_requested).toFixed(2)}
-                          </td>
+                          {user?.role !== 'profesor' && (
+                            <>
+                              <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                                Q {item.estimated_unit_cost || 0}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-semibold text-gray-900 text-right">
+                                Q {((item.estimated_unit_cost || 0) * item.quantity_requested).toFixed(2)}
+                              </td>
+                            </>
+                          )}
                         </tr>
                       ))}
                     </tbody>
