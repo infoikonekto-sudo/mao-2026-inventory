@@ -81,10 +81,13 @@ export default function TopBar({ onToggleSidebar, user }: TopBarProps) {
             if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
               fetchPending(); // Actualizar contador si cambió de estado
             }
-            if (newData.requested_by === user?.full_name) {
-               const statusCapitalized = newData.status ? newData.status.charAt(0).toUpperCase() + newData.status.slice(1) : 'Actualizada';
-               notifyUser(`Requisición ${statusCapitalized}`, `Tu requisición ${newData.requisition_number || ''} ahora está: ${newData.status}.`);
-            }
+            // Fetch complete requisition data since payload.new might lack fields (Replica Identity Default)
+            supabase.from('requisitions').select('*').eq('id', newData.id).single().then(({ data: reqData }) => {
+              if (reqData && reqData.requested_by === user?.full_name) {
+                 const statusCapitalized = reqData.status ? reqData.status.charAt(0).toUpperCase() + reqData.status.slice(1) : 'Actualizada';
+                 notifyUser(`Requisición ${statusCapitalized}`, `Tu requisición ${reqData.requisition_number || ''} ahora está: ${reqData.status}.`);
+              }
+            });
           } else if (payload.eventType === 'DELETE') {
             if (['admin', 'superadmin', 'jefe_compras'].includes(user?.role || '')) {
               fetchPending(); // Actualizar contador
