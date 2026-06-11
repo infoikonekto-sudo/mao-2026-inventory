@@ -1004,7 +1004,7 @@ export default function RequisitionsPage() {
                         Asignar CC
                       </button>
                     )}
-                    {canApprove && (req.status === 'en_revision' || (req.status === 'pendiente' && req.cost_center_id)) && (
+                    {canApprove && (req.status === 'en_revision' || req.status === 'pendiente') && (
                       <>
                         <button
                           onClick={() => handleApprovalChange(req.id, 'aprobada')}
