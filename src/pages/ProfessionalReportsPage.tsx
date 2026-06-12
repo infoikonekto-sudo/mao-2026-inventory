@@ -1745,50 +1745,6 @@ export default function ProfessionalReportsPage() {
               </div>
             </div>
           </div>
-        ) : (reportType === 'entries' || reportType === 'exits') && reportData.movements ? (
-          <div className="card p-0 overflow-hidden animate-in fade-in duration-500">
-            <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center">
-              <h3 className="font-bold text-slate-800 uppercase text-xs tracking-widest">
-                {reportType === 'entries' ? '📥 Registro de Entradas' : '📤 Registro de Salidas'}
-              </h3>
-              <span className="text-[10px] font-bold bg-slate-200 text-slate-600 px-2 py-0.5 rounded">
-                {reportData.movements.filter(m => reportType === 'entries' ? m.movement_type === 'entrada' : (m.movement_type === 'salida' || m.movement_type === 'requisicion')).length} Registros
-              </span>
-            </div>
-            <table className="w-full text-sm">
-              <thead className="bg-white border-b">
-                <tr className="text-slate-400 text-[10px] uppercase font-bold">
-                  <th className="px-4 py-3 text-left">Fecha</th>
-                  <th className="px-4 py-3 text-left">Artículo</th>
-                  <th className="px-4 py-3 text-right">Cantidad</th>
-                  <th className="px-4 py-3 text-right">V. Unitario</th>
-                  <th className="px-4 py-3 text-right">V. Total</th>
-                  <th className="px-4 py-3 text-left">Referencia</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {reportData.movements
-                  .filter(m => reportType === 'entries' ? m.movement_type === 'entrada' : (m.movement_type === 'salida' || m.movement_type === 'requisicion'))
-                  .map(m => (
-                    <tr key={m.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-3 text-xs text-slate-500">{new Date(m.created_at).toLocaleDateString()}</td>
-                      <td className="px-4 py-3">
-                        <p className="font-bold text-slate-800">{m.items?.name || 'Item Desconocido'}</p>
-                        <p className="text-[10px] text-slate-400">{m.items?.category || m.items?.item_code}</p>
-                      </td>
-                      <td className="px-4 py-3 text-right font-black text-slate-700">{m.quantity}</td>
-                      <td className="px-4 py-3 text-right text-slate-500">Q {(m.items?.unit_cost || 0).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-900">Q {(m.quantity * (m.items?.unit_cost || 0)).toLocaleString()}</td>
-                      <td className="px-4 py-3">
-                        <span className="text-[9px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase">
-                          {m.reference_type || 'Manual'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
         ) : reportType === 'dashboard' && reportData.summary ? (
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* Executive KPIs */}
