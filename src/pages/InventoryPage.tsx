@@ -9,6 +9,7 @@ import {
 import { useRealtimeData } from '@/hooks/useRealtimeData'
 import toast from 'react-hot-toast'
 import JsBarcode from 'jsbarcode'
+import InventoryEntryTab from '@/components/InventoryEntryTab'
 
 interface InventoryItem {
   id: string
@@ -181,6 +182,7 @@ const InlineBarcode = memo(function InlineBarcode({
 
 export default function InventoryPage() {
   const { user } = useAuthStore()
+  const [activeTab, setActiveTab] = useState<'inventory' | 'entry'>('inventory')
   const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -878,12 +880,36 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">📦 Gestión de Inventario</h1>
-        <p className="text-gray-600 mt-1">Administra, escanea e imprime etiquetas de inventario</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">📦 Gestión de Inventario</h1>
+          <p className="text-gray-600 mt-1">Administra, escanea e imprime etiquetas de inventario</p>
+        </div>
+        <div className="flex bg-gray-100 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'inventory' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            📋 Inventario Actual
+          </button>
+          <button
+            onClick={() => setActiveTab('entry')}
+            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === 'entry' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-900'
+            }`}
+          >
+            📥 Registrar Ingreso
+          </button>
+        </div>
       </div>
 
-      {/* Metrics */}
+      {activeTab === 'entry' ? (
+        <InventoryEntryTab />
+      ) : (
+        <>
+          {/* Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card p-6">
           <p className="text-sm text-gray-600">Total de Items</p>
@@ -1737,6 +1763,8 @@ export default function InventoryPage() {
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )

@@ -140,10 +140,29 @@ export const exportInventoryToCSV = (items: any[]): void => {
     { key: 'unit_price', label: 'Precio Unitario (Q)', format: (v) => parseFloat(v || 0).toFixed(2) },
     { key: 'stock_quantity', label: 'Stock' },
     { key: 'minimum_stock', label: 'Mínimo' },
+    { key: 'total_value', label: 'Valor Total (Q)', format: (v: any) => parseFloat(v || 0).toFixed(2) },
     { key: 'category', label: 'Categoría' },
-    { key: 'updated_at', label: 'Última Actualización', format: (v) => new Date(v).toLocaleDateString('es-GT') },
+    { key: 'updated_at', label: 'Última Actualización', format: (v: any) => v ? new Date(v).toLocaleDateString('es-GT') : '' },
   ]
   
-  const csv = arrayToCSV(items, columns)
+  const itemsWithTotalValue = items.map(item => ({
+    ...item,
+    total_value: (item.current_stock || item.stock_quantity || 0) * parseFloat(item.unit_price || item.unit_cost || 0)
+  }));
+
+  const totalGeneral = itemsWithTotalValue.reduce((sum, item) => sum + item.total_value, 0);
+  
+  const itemsWithTotal = [...itemsWithTotalValue, { 
+    code: 'TOTAL', 
+    name: 'TOTAL INVENTARIO', 
+    unit_price: '', 
+    stock_quantity: '', 
+    minimum_stock: '', 
+    total_value: totalGeneral, 
+    category: '', 
+    updated_at: '' 
+  }];
+
+  const csv = arrayToCSV(itemsWithTotal, columns)
   downloadCSV(csv, 'inventario')
 }
