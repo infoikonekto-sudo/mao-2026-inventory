@@ -833,15 +833,15 @@ export default function ProfessionalReportsPage() {
         fileName = 'Resumen-Movimientos'
       } else if (reportType === 'entries' || reportType === 'exits') {
         exportData = (reportData.movements || [])
-          .filter(m => reportType === 'entries' ? m.movement_type === 'entrada' : (m.movement_type === 'salida' || m.movement_type === 'requisicion'))
+          .filter(m => reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion'))
           .map(m => ({
             'Fecha': new Date(m.created_at).toLocaleDateString('es-CO'),
             'Artículo': m.items?.name || 'N/A',
-            'Categoría': m.items?.category || 'N/A',
-            'Cantidad': m.quantity,
+            'Código': m.items?.item_code || 'N/A',
+            'Cantidad': Math.abs(m.change || 0),
             'Costo Unitario (Q)': m.items?.unit_cost || 0,
-            'Monto Total (Q)': m.quantity * (m.items?.unit_cost || 0),
-            'Tipo Referencia': m.reference_type || 'Manual'
+            'Monto Total (Q)': Math.abs(m.change || 0) * (m.items?.unit_cost || 0),
+            'Referencia': m.justification || m.purpose || 'Sin referencia'
           }))
         fileName = reportType === 'entries' ? 'Entradas-Inventario' : 'Salidas-Inventario'
       } else if (reportType === 'abc' && reportData.movements) {
@@ -1204,7 +1204,7 @@ export default function ProfessionalReportsPage() {
           </div>}
           {stats.totalValue && <div className="card p-6">
             <p className="text-sm text-gray-600">Valor Total</p>
-            <p className="text-3xl font-bold text-info mt-2">${(stats.totalValue / 1000).toFixed(1)}K</p>
+            <p className="text-2xl font-bold text-info mt-2">Q {stats.totalValue.toLocaleString('es-GT', {minimumFractionDigits: 2})}</p>
           </div>}
         </div>
       )}
