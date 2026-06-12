@@ -834,6 +834,37 @@ export async function updateRequisitionStatus(requisitionId: string, status: str
       }
     }
 
+    // Notificaciones in-app
+    if (status === 'aprobada' || status === 'listo_para_recoger') {
+      try {
+        const { data: reqData } = await supabase.from('requisitions').select('requisition_number').eq('id', requisitionId).single()
+        const reqNum = reqData?.requisition_number || 'Desconocida'
+        let title = ''
+        let message = ''
+        
+        if (status === 'aprobada') {
+          title = 'Requisición Aprobada'
+          message = `Tu requisición ${reqNum} ha sido aprobada por la administración.`
+        } else if (status === 'listo_para_recoger') {
+          title = '¡Pedido Listo para Recoger!'
+          message = `Los artículos de tu requisición ${reqNum} ya están listos. Puedes pasar a recogerlos a bodega.`
+        }
+        
+        if (title && req.user_id) {
+          await createInAppNotification({
+            license_id: req.license_id,
+            recipient_user_id: req.user_id,
+            title,
+            message,
+            related_type: 'requisition',
+            related_id: requisitionId
+          })
+        }
+      } catch (err) {
+        console.error('Error enviando notificacion in-app:', err)
+      }
+    }
+
     return true
   } catch (error) {
     console.error('Error updating requisition status:', error)
@@ -844,16 +875,51 @@ export async function updateRequisitionStatus(requisitionId: string, status: str
 // Aprobar o rechazar solicitud de compra
 export async function updatePurchaseRequestStatus(requestId: string, status: string) {
   try {
+    const { data: reqToUpdate } = await supabase.from('purchase_requests').select('license_id, user_id, request_number').eq('id', requestId).single()
+
     // Solo actualizar el status, no hay columna comments en la tabla
     const { error } = await supabase
       .from('purchase_requests')
       .update({ status })
       .eq('id', requestId)
 
-    if (error) {
-      console.error('Supabase error:', { code: error.code, message: error.message, details: error.details })
-      throw error
+    if (error) throw error
+
+    // Notificaciones in-app
+    if (status === 'aprobada' || status === 'convertida_orden' || status === 'listo_para_recoger') {
+      try {
+        if (reqToUpdate && reqToUpdate.user_id) {
+          let title = ''
+          let message = ''
+          const reqNum = reqToUpdate.request_number || 'Desconocida'
+          
+          if (status === 'aprobada') {
+            title = 'Solicitud de Compra Aprobada'
+            message = `Tu solicitud ${reqNum} ha sido aprobada y pasará a compras.`
+          } else if (status === 'convertida_orden') {
+            title = 'Solicitud en Proceso de Compra'
+            message = `Tu solicitud ${reqNum} ya se encuentra en proceso con proveedores.`
+          } else if (status === 'listo_para_recoger') {
+            title = '¡Pedido Listo para Recoger!'
+            message = `Los artículos de tu solicitud de compra ${reqNum} ya llegaron. Puedes pasar a recogerlos.`
+          }
+          
+          if (title) {
+            await createInAppNotification({
+              license_id: reqToUpdate.license_id,
+              recipient_user_id: reqToUpdate.user_id,
+              title,
+              message,
+              related_type: 'purchase_request',
+              related_id: requestId
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Error enviando notificacion in-app:', err)
+      }
     }
+
     return true
   } catch (error) {
     console.error('Error updating purchase request status:', error)

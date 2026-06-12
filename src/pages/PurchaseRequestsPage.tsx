@@ -13,6 +13,7 @@ const statusLabels = {
   aprobada: 'Aprobada',
   rechazada: 'Rechazada',
   convertida_orden: 'Convertida a Orden',
+  listo_para_recoger: 'Listo para Recoger',
 }
 
 export default function PurchaseRequestsPage() {
@@ -36,7 +37,7 @@ export default function PurchaseRequestsPage() {
   const canCreate = user ? canUserCreatePurchaseRequest(user.role) : false
   const _canApprove = user && (user.role === 'jefe_compras' || user.role === 'admin')
 
-  const handleApprovalChange = async (requestId: string, newStatus: 'aprobada' | 'rechazada' | 'en_revision', _comments?: string) => {
+  const handleApprovalChange = async (requestId: string, newStatus: 'aprobada' | 'rechazada' | 'en_revision' | 'listo_para_recoger', _comments?: string) => {
     try {
       setUpdatingId(requestId)
 
@@ -392,8 +393,8 @@ export default function PurchaseRequestsPage() {
           <div key={req.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl shadow-gray-200/20 hover:-translate-y-1 hover:shadow-2xl transition-all duration-300 flex flex-col">
             <div className="flex justify-between items-start mb-4">
               <span className="px-3 py-1 bg-gray-50 text-[10px] font-black text-gray-500 rounded-full uppercase tracking-widest">{req.request_number}</span>
-              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${req.status === 'aprobada' ? 'bg-emerald-100 text-emerald-700' : req.status === 'rechazada' ? 'bg-red-100 text-red-700' : req.status === 'pendiente' ? 'bg-amber-100 text-amber-700' : req.status === 'convertida_orden' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                {statusLabels[req.status as keyof typeof statusLabels]}
+              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${req.status === 'aprobada' ? 'bg-emerald-100 text-emerald-700' : req.status === 'rechazada' ? 'bg-red-100 text-red-700' : req.status === 'pendiente' ? 'bg-amber-100 text-amber-700' : req.status === 'convertida_orden' ? 'bg-purple-100 text-purple-700' : req.status === 'listo_para_recoger' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}`}>
+                {statusLabels[req.status as keyof typeof statusLabels] || req.status}
               </span>
             </div>
 
@@ -458,6 +459,18 @@ export default function PurchaseRequestsPage() {
                       Marcar en Revisión
                     </button>
                   )}
+                </div>
+              )}
+              {_canApprove && (req.status === 'aprobada' || req.status === 'convertida_orden') && (
+                <div className="mt-4 pt-4 border-t border-gray-50">
+                  <button
+                    onClick={() => handleApprovalChange(req.id, 'listo_para_recoger')}
+                    disabled={updatingId === req.id}
+                    className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                  >
+                    <CheckCircle size={14} />
+                    Listo para recoger
+                  </button>
                 </div>
               )}
             </div>
