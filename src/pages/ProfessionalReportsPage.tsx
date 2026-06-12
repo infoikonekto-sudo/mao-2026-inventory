@@ -1344,23 +1344,23 @@ export default function ProfessionalReportsPage() {
       {/* Stats */}
       {Object.keys(stats).length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {stats.total && <div className="card p-6">
+          {stats.total !== undefined && <div className="card p-6">
             <p className="text-sm text-gray-600">Total de Registros</p>
             <p className="text-3xl font-bold text-primary mt-2">{stats.total}</p>
           </div>}
-          {stats.approved && <div className="card p-6">
+          {stats.approved !== undefined && <div className="card p-6">
             <p className="text-sm text-gray-600">Aprobadas</p>
             <p className="text-3xl font-bold text-success mt-2">{stats.approved}</p>
           </div>}
-          {stats.pending && <div className="card p-6">
+          {stats.pending !== undefined && <div className="card p-6">
             <p className="text-sm text-gray-600">Pendientes</p>
             <p className="text-3xl font-bold text-warning mt-2">{stats.pending}</p>
           </div>}
-          {stats.lowStock && <div className="card p-6">
+          {stats.lowStock !== undefined && <div className="card p-6">
             <p className="text-sm text-gray-600">Stock Bajo</p>
             <p className="text-3xl font-bold text-error mt-2">{stats.lowStock}</p>
           </div>}
-          {stats.totalValue && <div className="card p-6">
+          {stats.totalValue !== undefined && <div className="card p-6">
             <p className="text-sm text-gray-600">Valor Total</p>
             <p className="text-2xl font-bold text-info mt-2">Q {stats.totalValue.toLocaleString('es-GT', {minimumFractionDigits: 2})}</p>
           </div>}
@@ -2100,7 +2100,13 @@ export default function ProfessionalReportsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {reportData.movements
+                      {reportData.movements.filter(m => reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion')).length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-12 text-center">
+                            <p className="text-slate-500 font-medium">No se encontraron movimientos para los filtros seleccionados.</p>
+                          </td>
+                        </tr>
+                      ) : reportData.movements
                         .filter(m => reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion'))
                         .slice(0, 20)
                         .map((m, idx) => (
