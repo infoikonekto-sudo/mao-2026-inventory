@@ -65,7 +65,7 @@ const REPORT_CATEGORIES = [
     bg: 'bg-emerald-50',
     reports: [
       { id: 'requisitions', label: 'Historial de Requisiciones', icon: '📋' },
-      { id: 'exits', label: 'Salidas y Consumos', icon: '📤' },
+      { id: 'exits', label: 'Egresos de Inventario', icon: '📤' },
     ]
   },
   {
