@@ -350,9 +350,15 @@ export default function ProfessionalReportsPage() {
         ])
 
         const itemMap = new Map(items?.map(i => [i.id, i]) || [])
+        
+        const userIds = [...new Set((movements || []).map(m => m.user_id).filter(Boolean))]
+        const { data: usersData } = await supabase.from('users').select('id, full_name').in('id', userIds)
+        const userMap = new Map((usersData || []).map(u => [u.id, u]))
+
         const movementsWithDetails = (movements || []).map(m => ({
           ...m,
-          items: itemMap.get(m.item_id)
+          items: itemMap.get(m.item_id),
+          user: userMap.get(m.user_id)
         }))
 
         let finalMovements = movementsWithDetails
@@ -879,6 +885,7 @@ export default function ProfessionalReportsPage() {
             if (reportType === 'exits') {
               result['Área / Depto'] = deptName
               result['Centro de Costo'] = ccName
+              result['Responsable'] = m.user?.full_name || 'N/A'
             }
             result['Cantidad'] = Math.abs(m.change || 0)
             result['Costo Unitario (Q)'] = m.items?.unit_cost || 0
@@ -1985,38 +1992,58 @@ export default function ProfessionalReportsPage() {
                 </table>
               )}
               {(reportType === 'entries' || reportType === 'exits') && reportData.movements && (
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr className="text-[10px] uppercase text-slate-400 font-bold">
-                      <th className="px-4 py-3 text-left">Fecha</th>
-                      <th className="px-4 py-3 text-left">Artículo</th>
-                      <th className="px-4 py-3 text-right">Cantidad</th>
-                      <th className="px-4 py-3 text-left">Referencia</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {reportData.movements
-                      .filter(m => reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion'))
-                      .slice(0, 20)
-                      .map((m, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50">
-                          <td className="px-4 py-3 text-xs text-slate-500">
-                            {new Date(m.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="font-bold text-slate-800">{m.items?.name || 'Item Desconocido'}</p>
-                            <p className="text-[10px] text-slate-400">{m.items?.item_code}</p>
-                          </td>
-                          <td className={`px-4 py-3 text-right font-black ${reportType === 'entries' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            {reportType === 'entries' ? '+' : '-'}{m.change}
-                          </td>
-                          <td className="px-4 py-3 text-[10px] text-slate-500 max-w-[200px] truncate">
-                            {m.justification || m.purpose || 'Sin referencia'}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto w-full rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/20 bg-white">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50/80 border-b border-slate-100 backdrop-blur-sm">
+                      <tr className="text-[10px] uppercase text-slate-400 font-black tracking-widest">
+                        <th className="px-6 py-4 text-left">Fecha</th>
+                        <th className="px-6 py-4 text-left">Artículo</th>
+                        <th className="px-6 py-4 text-right">Cantidad</th>
+                        {reportType === 'exits' && <th className="px-6 py-4 text-left">Área / Responsable</th>}
+                        <th className="px-6 py-4 text-left">Referencia</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {reportData.movements
+                        .filter(m => reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion'))
+                        .slice(0, 20)
+                        .map((m, idx) => (
+                          <tr key={idx} className="hover:bg-blue-50/30 transition-all duration-300 group">
+                            <td className="px-6 py-4">
+                              <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full group-hover:bg-white group-hover:shadow-sm transition-all">{new Date(m.created_at).toLocaleDateString('es-CO')}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <p className="font-black text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{m.items?.name || 'Item Desconocido'}</p>
+                              <p className="text-[10px] text-slate-400 font-mono mt-1 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100">{m.items?.item_code}</p>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <span className={`inline-flex items-center justify-center px-3 py-1 rounded-xl text-sm font-black ${reportType === 'entries' ? 'bg-emerald-100/50 text-emerald-600 border border-emerald-100' : 'bg-rose-100/50 text-rose-600 border border-rose-100'}`}>
+                                {reportType === 'entries' ? '+' : '-'}{Math.abs(m.change)}
+                              </span>
+                            </td>
+                            {reportType === 'exits' && (
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-bold text-slate-700 text-xs truncate max-w-[180px] flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                    {m.areaInfo ? (allDepartments.find(d => d.id === m.areaInfo.department_id)?.name || allCostCenters.find(c => c.id === m.areaInfo.cost_center_id)?.name || 'Área Desconocida') : 'N/A'}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-medium truncate max-w-[180px] ml-3">
+                                    👤 {m.user?.full_name || 'Usuario Desconocido'}
+                                  </span>
+                                </div>
+                              </td>
+                            )}
+                            <td className="px-6 py-4">
+                              <p className="text-xs text-slate-500 max-w-[250px] truncate group-hover:whitespace-normal group-hover:bg-white group-hover:shadow-lg group-hover:absolute group-hover:z-10 group-hover:p-3 group-hover:rounded-xl group-hover:border group-hover:border-slate-100 transition-all origin-left">
+                                {m.justification || m.purpose || 'Sin referencia'}
+                              </p>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
               {reportType === 'inventory' && reportData.inventory && reportData.inventory.length > 0 && (
                 <div className="overflow-x-auto w-full rounded-2xl border border-slate-100 shadow-sm">
