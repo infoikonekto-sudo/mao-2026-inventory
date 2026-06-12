@@ -709,6 +709,18 @@ export default function ProfessionalReportsPage() {
           styles: { fontSize: 7, cellPadding: 2 },
           columnStyles: reportType === 'exits' ? { 6: { halign: 'right' }, 7: { halign: 'right' } } : { 4: { halign: 'right' }, 5: { halign: 'right' } }
         });
+
+        if (reportType === 'exits' && !selectedCostCenter && !selectedDepartment) {
+          const finalY = (pdf as any).lastAutoTable.finalY || yPos;
+          let chartY = finalY + 15;
+          if (chartY > pdf.internal.pageSize.getHeight() - 60) {
+            pdf.addPage();
+            chartY = 20;
+          }
+          pdf.setFont('helvetica', 'bold');
+          pdf.text('COMPARATIVA DE GASTOS POR ÁREA', 20, chartY);
+          await addChartToPDF('chart-exits-areas', chartY + 10);
+        }
       } else if (reportType === 'orders' && reportData.orders) {
         const tableData = reportData.orders.map((o, idx) => [
           idx + 1,
@@ -2006,6 +2018,42 @@ export default function ProfessionalReportsPage() {
                   </tbody>
                 </table>
               )}
+
+              {/* Chart for Exits by Area */}
+              {reportType === 'exits' && reportData.movements && !selectedCostCenter && !selectedDepartment && (
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/20 mb-6 animate-in fade-in duration-500">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-lg font-black text-slate-800">Comparativa por Áreas</h3>
+                      <p className="text-xs text-slate-500">Distribución del gasto (Top 10)</p>
+                    </div>
+                    <BarChart3 className="text-slate-400" size={20} />
+                  </div>
+                  <div id="chart-exits-areas" className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={(() => {
+                        const areaMap: Record<string, number> = {}
+                        reportData.movements.filter(m => m.type === 'salida' || m.type === 'requisicion').forEach(m => {
+                          const areaName = m.areaInfo ? (allDepartments.find(d => d.id === m.areaInfo.department_id)?.name || allCostCenters.find(c => c.id === m.areaInfo.cost_center_id)?.name || 'Desconocida') : 'Desconocida'
+                          const value = Math.abs(m.change || 0) * (m.items?.unit_cost || 0)
+                          areaMap[areaName] = (areaMap[areaName] || 0) + value
+                        })
+                        return Object.entries(areaMap)
+                          .map(([name, value]) => ({ name, value }))
+                          .sort((a, b) => b.value - a.value)
+                          .slice(0, 10)
+                      })()} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="name" type="category" width={150} fontSize={10} stroke="#64748b" tickFormatter={(value) => value.length > 20 ? value.substring(0, 20) + '...' : value} />
+                        <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} formatter={(value: any) => [`Q ${value.toLocaleString('es-GT', {minimumFractionDigits: 2})}`, 'Total (Q)']} />
+                        <Bar name="Gasto Total" dataKey="value" fill="#f43f5e" radius={[0, 8, 8, 0]} barSize={16} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
               {(reportType === 'entries' || reportType === 'exits') && reportData.movements && (
                 <div className="overflow-x-auto w-full rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/20 bg-white">
                   <table className="w-full text-sm">
