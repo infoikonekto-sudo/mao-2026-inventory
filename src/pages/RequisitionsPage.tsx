@@ -822,101 +822,11 @@ export default function RequisitionsPage() {
                 )}
               </div>
 
-              {/* ── SEPARADOR ── */}
-              <div className="flex items-center justify-center my-2">
-                <div className="h-px bg-gray-200 flex-1"></div>
-                <span className="px-4 text-xs font-black text-gray-400 uppercase tracking-widest">O bien, agrega uno personalizado</span>
-                <div className="h-px bg-gray-200 flex-1"></div>
-              </div>
-
-              {/* ── SECCIÓN 2: Ítem Personalizado ── */}
-              <div className="bg-amber-50 border-2 border-amber-200 p-5 rounded-2xl">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">✏️ Manual</span>
-                  <span className="text-xs text-amber-700 font-semibold">Para materiales que no están en el inventario</span>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Nombre del material o producto"
-                  value={newItemName}
-                  onChange={(e) => {
-                    setNewItemName(e.target.value)
-                    setSelectedItemId('')
-                    setSelectedItemStock(0)
-                  }}
-                  className="w-full bg-white border-2 border-amber-200 text-gray-900 py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm font-medium transition-all mb-3"
-                />
-                {/* Quantity & Unit for custom item */}
-                {newItemName.trim() && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-xs font-bold text-amber-700 mb-1">Cantidad</label>
-                      <input
-                        type="number" min="1"
-                        value={newItemQuantity}
-                        onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-                        className="w-full py-2 px-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-amber-700 mb-1">Unidad</label>
-                      <select
-                        value={newItemUnit}
-                        onChange={(e) => { setNewItemUnit(e.target.value); if (!PACKAGE_UNITS.includes(e.target.value)) setNewItemUnitsPerPackage(1) }}
-                        className="w-full py-2 px-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        aria-label="Unidad de medida"
-                      >
-                        {COMMON_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Units per package */}
-              {isPackageUnit && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <label className="block text-sm font-medium text-blue-800 mb-1">
-                    Unidades por {newItemUnit.slice(0, -1)}
-                  </label>
-                  <input
-                    type="number" min="1"
-                    value={newItemUnitsPerPackage}
-                    onChange={(e) => setNewItemUnitsPerPackage(parseInt(e.target.value) || 1)}
-                    className="input-base"
-                    placeholder="Ej: 24 unidades por caja"
-                  />
-                  {newItemQuantity > 0 && newItemUnitsPerPackage > 1 && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Total: {newItemQuantity} {newItemUnit} × {newItemUnitsPerPackage} uds = <strong>{newItemQuantity * newItemUnitsPerPackage} unidades individuales</strong>
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Quantity input when NOT from inventory */}
-              {!selectedItemId && !newItemName.trim() && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                    <input type="number" min="1" value={newItemQuantity}
-                      onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-                      className="input-base" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Unidad</label>
-                    <select value={newItemUnit} onChange={(e) => { setNewItemUnit(e.target.value); if (!PACKAGE_UNITS.includes(e.target.value)) setNewItemUnitsPerPackage(1) }}
-                      className="input-base" aria-label="Unidad">
-                      {COMMON_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
 
               <button
                 type="button"
                 onClick={addItemToCart}
-                disabled={selectedItemId ? (newItemQuantity > selectedItemStock || selectedItemStock === 0) : false}
+                disabled={!selectedItemId || newItemQuantity > selectedItemStock || selectedItemStock === 0}
                 className="w-full mt-2 flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ShoppingCart size={18} />
