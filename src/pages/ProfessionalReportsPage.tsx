@@ -5,7 +5,7 @@ import {
   AreaChart, Area
 } from 'recharts'
 import html2canvas from 'html2canvas'
-import { FileText, BarChart3, TrendingUp, AlertTriangle, CheckCircle, Package, Building2, ListChecks, ArrowRight, History, BookOpen, ArrowUpCircle, Database, Calendar } from 'lucide-react'
+import { FileText, BarChart3, TrendingUp, AlertTriangle, CheckCircle, Package, Building2, ListChecks, ArrowRight, History, BookOpen, Database, Calendar } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/services/supabaseClient'
 import toast from 'react-hot-toast'
@@ -1108,19 +1108,19 @@ export default function ProfessionalReportsPage() {
       </div>
 
 
-      {/* Selector de Reporte Categorizado */}
+      {/* Selector de Reporte Categorizado - Diseño Compacto y Horizontal */}
       <div className="space-y-4">
         <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] px-1">Catálogo de Reportes Maestros</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {REPORT_CATEGORIES.map(cat => (
-            <div key={cat.id} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-2xl ${cat.color} bg-opacity-10 shadow-sm`}>
+            <div key={cat.id} className="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`p-2 rounded-xl ${cat.color} bg-slate-50`}>
                     {cat.icon}
                 </div>
-                <h3 className="font-black text-gray-800 text-sm uppercase tracking-tight">{cat.label}</h3>
+                <h3 className="font-bold text-slate-800 text-sm">{cat.label}</h3>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-wrap gap-2">
                 {cat.reports.map(rep => (
                   <button
                     key={rep.id}
@@ -1128,17 +1128,14 @@ export default function ProfessionalReportsPage() {
                       setReportType(rep.id as any)
                       setReportData({})
                     }}
-                    className={`flex items-center justify-between group px-4 py-3 rounded-2xl transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all duration-300 ${
                       reportType === rep.id 
-                        ? 'bg-blue-600 text-white shadow-xl shadow-blue-100 -translate-y-0.5' 
-                        : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
+                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200 -translate-y-0.5' 
+                        : 'bg-slate-50 text-slate-500 hover:bg-blue-50 hover:text-blue-600'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                        <div className={`w-1.5 h-1.5 rounded-full transition-all ${reportType === rep.id ? 'bg-white scale-125' : 'bg-gray-200 group-hover:bg-blue-400'}`} />
-                        <span className="text-xs font-bold">{rep.label}</span>
-                    </div>
-                    {reportType === rep.id && <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-ping" />}
+                    <span>{rep.label}</span>
+                    {reportType === rep.id && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />}
                   </button>
                 ))}
               </div>
@@ -1147,66 +1144,38 @@ export default function ProfessionalReportsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mt-12">
-        {/* Sidebar de Acciones */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl shadow-slate-200 overflow-hidden relative group">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000"></div>
-            
-            <div className="relative z-10 space-y-8">
-                <div>
-                    <h3 className="text-2xl font-black mb-1">Exportar</h3>
-                    <p className="text-slate-400 text-xs font-medium">Genere documentos listos para impresión o análisis legal</p>
-                </div>
+        <div className="flex flex-col gap-6 mt-8">
+        {/* Barra Superior de Exportación (Horizontal) */}
+        <div className="bg-slate-900 p-6 rounded-[2rem] text-white shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl"></div>
+          
+          <div className="relative z-10">
+              <h3 className="text-xl font-black mb-1">Exportar Reporte Actual</h3>
+              <p className="text-slate-400 text-xs font-medium">Genere documentos listos para impresión o análisis legal</p>
+          </div>
 
-                <div className="space-y-3">
-                    <button
-                        onClick={() => handleExport('pdf')}
-                        disabled={loading || exporting}
-                        className="w-full flex items-center justify-between group p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/20"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-rose-500/20 text-rose-400 rounded-xl">
-                                <FileText size={20} />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm font-black">Documento PDF</p>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Gráficos + Tablas</p>
-                            </div>
-                        </div>
-                        <ArrowUpCircle size={20} className="text-slate-600 group-hover:text-white transition-colors" />
-                    </button>
+          <div className="relative z-10 flex flex-wrap gap-4">
+              <button
+                  onClick={() => handleExport('pdf')}
+                  disabled={loading || exporting}
+                  className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 hover:border-white/20"
+              >
+                  <FileText size={18} className="text-rose-400" />
+                  <div className="text-left">
+                      <p className="text-xs font-black">PDF</p>
+                  </div>
+              </button>
 
-                    <button
-                        onClick={() => handleExport('excel')}
-                        disabled={loading || exporting}
-                        className="w-full flex items-center justify-between group p-4 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 hover:border-white/20"
-                    >
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl">
-                                <Database size={20} />
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm font-black">Libro de Excel</p>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Solo Datos RAW</p>
-                            </div>
-                        </div>
-                        <ArrowUpCircle size={20} className="text-slate-600 group-hover:text-white transition-colors" />
-                    </button>
-                </div>
-
-                <div className="pt-4 border-t border-white/5">
-                    <div className="flex items-center gap-3 text-slate-500 mb-6">
-                        <History size={16} />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Historial de Generación</span>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <span className="text-xs font-bold text-slate-400 italic">No hay exportaciones recientes</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+              <button
+                  onClick={() => handleExport('excel')}
+                  disabled={loading || exporting}
+                  className="flex items-center gap-3 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/10 hover:border-white/20"
+              >
+                  <Database size={18} className="text-emerald-400" />
+                  <div className="text-left">
+                      <p className="text-xs font-black">Excel</p>
+                  </div>
+              </button>
           </div>
         </div>
       </div>
