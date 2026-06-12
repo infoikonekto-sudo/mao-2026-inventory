@@ -75,7 +75,8 @@ const REPORT_CATEGORIES = [
     color: 'text-amber-600',
     bg: 'bg-amber-50',
     reports: [
-      { id: 'inventory', label: 'Stock Actual', icon: '📚' },
+      { id: 'inventory', label: 'Stock Actual y Valorización', icon: '📚' },
+      { id: 'entries', label: 'Ingresos de Inventario', icon: '📥' },
       { id: 'abc', label: 'Análisis ABC', icon: '📊' },
       { id: 'suppliers', label: 'Directorio de Proveedores', icon: '🤝' },
     ]
@@ -916,6 +917,18 @@ export default function ProfessionalReportsPage() {
           'Costo Unit. (Q)': i.unit_cost || 0,
           'Valor Total (Q)': (i.current_stock || 0) * (i.unit_cost || 0)
         }))
+        
+        const totalInventario = exportData.reduce((sum, row) => sum + row['Valor Total (Q)'], 0)
+        exportData.push({
+          'Código': 'TOTAL',
+          'Nombre': 'VALOR TOTAL DEL INVENTARIO',
+          'Categoría': '',
+          'Unidad': '',
+          'Stock Actual': '',
+          'Stock Mínimo': '',
+          'Costo Unit. (Q)': '',
+          'Valor Total (Q)': totalInventario
+        })
         fileName = 'Inventario'
       } else if (reportType === 'cost-centers' && reportData.costCenters) {
         exportData = reportData.costCenters.map(cc => ({
@@ -1990,32 +2003,47 @@ export default function ProfessionalReportsPage() {
                 </table>
               )}
               {reportType === 'inventory' && reportData.inventory && reportData.inventory.length > 0 && (
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Código</th>
-                      <th className="px-4 py-2 text-left">Nombre</th>
-                      <th className="px-4 py-2 text-center">Stock Actual</th>
-                      <th className="px-4 py-2 text-right">Costo Unit.</th>
-                      <th className="px-4 py-2 text-center">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {(reportData.inventory || []).slice(0, 20).map(i => (
-                      <tr key={i.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-2 font-mono text-xs">{i.item_code || i.code || '-'}</td>
-                        <td className="px-4 py-2 text-xs font-medium">{i.name || '-'}</td>
-                        <td className={`px-4 py-2 text-center font-black ${i.current_stock <= (i.minimum_stock || 0) ? 'text-rose-600' : 'text-slate-900'}`}>{i.current_stock || 0}</td>
-                        <td className="px-4 py-2 text-right">Q {(i.unit_cost || 0).toLocaleString()}</td>
-                        <td className="px-4 py-2 text-center">
-                          <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase ${i.current_stock <= (i.minimum_stock || 0) ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {i.current_stock <= (i.minimum_stock || 0) ? 'Bajo' : 'OK'}
-                          </span>
-                        </td>
+                <div className="overflow-x-auto w-full rounded-2xl border border-slate-100 shadow-sm">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Código</th>
+                        <th className="px-4 py-3 text-left text-xs font-black uppercase tracking-wider text-slate-500">Nombre</th>
+                        <th className="px-4 py-3 text-center text-xs font-black uppercase tracking-wider text-slate-500">Stock Actual</th>
+                        <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500">Costo Unit.</th>
+                        <th className="px-4 py-3 text-right text-xs font-black uppercase tracking-wider text-slate-500">Valor Total</th>
+                        <th className="px-4 py-3 text-center text-xs font-black uppercase tracking-wider text-slate-500">Estado</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {(reportData.inventory || []).slice(0, 20).map(i => {
+                        const totalValor = (i.current_stock || 0) * (i.unit_cost || 0);
+                        return (
+                          <tr key={i.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-3 font-mono text-[11px] text-slate-400">{i.item_code || i.code || '-'}</td>
+                            <td className="px-4 py-3 text-xs font-bold text-slate-800">{i.name || '-'}</td>
+                            <td className={`px-4 py-3 text-center font-black ${i.current_stock <= (i.minimum_stock || 0) ? 'text-rose-600' : 'text-slate-900'}`}>{i.current_stock || 0}</td>
+                            <td className="px-4 py-3 text-right font-medium text-slate-600">Q {(i.unit_cost || 0).toLocaleString('es-GT', {minimumFractionDigits: 2})}</td>
+                            <td className="px-4 py-3 text-right font-black text-blue-700 bg-blue-50/30">Q {totalValor.toLocaleString('es-GT', {minimumFractionDigits: 2})}</td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`px-2 py-1 rounded-[6px] text-[9px] font-black uppercase ${i.current_stock <= (i.minimum_stock || 0) ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                {i.current_stock <= (i.minimum_stock || 0) ? 'Bajo' : 'OK'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {/* Fila de Total si hay inventario */}
+                      <tr className="bg-slate-900 text-white">
+                        <td colSpan={4} className="px-4 py-4 text-right font-black uppercase text-xs">Valor Total del Inventario Mostrado:</td>
+                        <td className="px-4 py-4 text-right font-black text-emerald-400">
+                          Q {(reportData.inventory || []).slice(0, 20).reduce((sum, i) => sum + ((i.current_stock || 0) * (i.unit_cost || 0)), 0).toLocaleString('es-GT', {minimumFractionDigits: 2})}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               )}
 
               {reportType === 'cost-centers' && reportData.costCenters && reportData.costCenters.length > 0 && (
