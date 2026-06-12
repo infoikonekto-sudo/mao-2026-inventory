@@ -366,27 +366,52 @@ export default function ProfessionalReportsPage() {
         if (reportType === 'exits') {
           const reqIds = finalMovements.filter(m => m.related_type === 'requisition').map(m => m.related_id).filter(Boolean)
           const expressIds = finalMovements.filter(m => m.related_type === 'express_order').map(m => m.related_id).filter(Boolean)
+          const deliveryIds = finalMovements.filter(m => m.related_type === 'delivery').map(m => m.related_id).filter(Boolean)
 
-          const [reqRes, expressRes] = await Promise.all([
+          const [reqRes, expressRes, delivRes] = await Promise.all([
             reqIds.length ? supabase.from('requisitions').select('id, department_id, cost_center_id').in('id', reqIds) : { data: [] },
-            expressIds.length ? supabase.from('express_orders').select('id, department_id, cost_center_id').in('id', expressIds) : { data: [] }
+            expressIds.length ? supabase.from('express_orders').select('id, department_id, cost_center_id').in('id', expressIds) : { data: [] },
+            deliveryIds.length ? supabase.from('deliveries').select('id, department, reference_request_id').in('id', deliveryIds) : { data: [] }
           ])
 
           const reqMap = new Map((reqRes.data || []).map((r:any) => [r.id, r]))
           const expressMap = new Map((expressRes.data || []).map((e:any) => [e.id, e]))
+          const delivMap = new Map((delivRes.data || []).map((d:any) => [d.id, d]))
+
+          // Fetch requisitions or express orders for the deliveries that have reference_request_id
+          const delivReqIds = (delivRes.data || []).map((d:any) => d.reference_request_id).filter(Boolean)
+          if (delivReqIds.length > 0) {
+            const { data: delivReqData } = await supabase.from('requisitions').select('id, department_id, cost_center_id').in('id', delivReqIds)
+            ;(delivReqData || []).forEach((r:any) => reqMap.set(r.id, r))
+          }
 
           finalMovements = finalMovements.map(m => {
             let areaInfo = null
             if (m.related_type === 'requisition') areaInfo = reqMap.get(m.related_id)
             if (m.related_type === 'express_order') areaInfo = expressMap.get(m.related_id)
+            if (m.related_type === 'delivery') {
+              const delivery = delivMap.get(m.related_id)
+              if (delivery) {
+                if (delivery.reference_request_id) {
+                  areaInfo = reqMap.get(delivery.reference_request_id) || expressMap.get(delivery.reference_request_id)
+                }
+                if (!areaInfo) {
+                  // Fallback to department name mapping
+                  const dept = allDepartments.find(d => d.name === delivery.department)
+                  areaInfo = { department_id: dept?.id }
+                }
+              }
+            }
+            // For inventory_edit, try to look at notes or keep areaInfo null
             return { ...m, areaInfo }
           })
 
           if (selectedCostCenter || selectedDepartment) {
             finalMovements = finalMovements.filter(m => {
-              if (!m.areaInfo) return !selectedCostCenter && !selectedDepartment
-              return (!selectedCostCenter || m.areaInfo.cost_center_id === selectedCostCenter) &&
-                     (!selectedDepartment || m.areaInfo.department_id === selectedDepartment)
+              if (!m.areaInfo) return false // Exclude if area can't be determined and filters are active
+              const matchCC = !selectedCostCenter || m.areaInfo.cost_center_id === selectedCostCenter;
+              const matchDept = !selectedDepartment || m.areaInfo.department_id === selectedDepartment;
+              return matchCC && matchDept;
             })
           }
         }
