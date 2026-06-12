@@ -78,6 +78,7 @@ export default function RequisitionsPage() {
   const [itemCart, setItemCart] = useState<RequisitionItem[]>([])
   const [itemSearch, setItemSearch] = useState('')
   const [selectedItemId, setSelectedItemId] = useState<string>('')
+  const [selectedItemStock, setSelectedItemStock] = useState<number>(0)
   const [newItemName, setNewItemName] = useState('')
   const [newItemQuantity, setNewItemQuantity] = useState<number>(1)
   const [newItemUnit, setNewItemUnit] = useState('unidades')
@@ -179,6 +180,17 @@ export default function RequisitionsPage() {
     if (selectedItemId) {
       const item = inventory.find(i => i.id === selectedItemId)
       if (!item) return
+
+      // Validate stock limit for profesor role
+      if (newItemQuantity > item.current_stock) {
+        toast.error(`❌ No puedes pedir más de ${item.current_stock} ${item.unit_of_measure || 'unidades'} disponibles en stock`)
+        return
+      }
+      if (item.current_stock === 0) {
+        toast.error('⚠️ Este producto no tiene stock disponible')
+        return
+      }
+
       const itemUnit = item.unit_of_measure || newItemUnit
       const itemUpp = item.units_per_package || newItemUnitsPerPackage
       const isPkg = PACKAGE_UNITS.includes(itemUnit)
@@ -191,6 +203,7 @@ export default function RequisitionsPage() {
         estimated_unit_cost: item.unit_cost || 0
       }])
       setSelectedItemId('')
+      setSelectedItemStock(0)
       setNewItemQuantity(1)
       setNewItemUnitsPerPackage(1)
       setNewItemUnit('unidades')
@@ -705,21 +718,27 @@ export default function RequisitionsPage() {
           <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* LEFT: Item Selection */}
             <div className="space-y-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-black">1</div>
-                <h4 className="font-bold text-gray-700 uppercase tracking-widest text-sm">Agrega Productos</h4>
-              </div>
+              {/* ── SECCIÓN 1: Buscar en Inventario ── */}
+              <div className="bg-blue-50 border-2 border-blue-200 p-5 rounded-2xl relative">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="bg-blue-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">📦 Inventario</span>
+                  <span className="text-xs text-blue-600 font-semibold">Busca y selecciona del stock disponible</span>
+                </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Buscar en Inventario</label>
-                <input
-                  type="text"
-                  placeholder="Escribe para buscar un producto..."
-                  value={itemSearch}
-                  onChange={(e) => setItemSearch(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-base font-medium transition-all shadow-inner"
-                />
-                <div className="relative mt-3">
+                {/* Search input */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-400" size={16} />
+                  <input
+                    type="text"
+                    placeholder="🔍 Escribe el nombre del producto..."
+                    value={itemSearch}
+                    onChange={(e) => setItemSearch(e.target.value)}
+                    className="w-full bg-white border-2 border-blue-200 text-gray-900 py-2.5 pl-9 pr-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-sm font-medium transition-all"
+                  />
+                </div>
+
+                {/* Dropdown */}
+                <div className="relative">
                   <select
                     value={selectedItemId}
                     onChange={(e) => {
@@ -729,96 +748,139 @@ export default function RequisitionsPage() {
                       if (id) {
                         const inv = inventory.find(i => i.id === id)
                         if (inv) {
-                          const invUnit = inv.unit_of_measure || 'unidades'
-                          setNewItemUnit(invUnit)
+                          setNewItemUnit(inv.unit_of_measure || 'unidades')
                           setNewItemUnitsPerPackage(inv.units_per_package || 1)
+                          setSelectedItemStock(inv.current_stock || 0)
+                          setNewItemQuantity(1)
                         }
+                      } else {
+                        setSelectedItemStock(0)
                       }
                     }}
-                    className="w-full appearance-none bg-white border border-gray-200 text-gray-700 py-3 px-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base font-semibold transition-all cursor-pointer hover:border-gray-300"
-                    title="Seleccione un artículo del inventario"
-                    aria-label="Seleccionar artículo"
+                    className="w-full appearance-none bg-white border-2 border-blue-200 text-gray-700 py-2.5 px-4 pr-10 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm font-semibold cursor-pointer"
+                    aria-label="Seleccionar artículo del inventario"
                   >
-                    <option value="">-- Selecciona del inventario --</option>
+                    <option value="">-- Selecciona un producto del inventario --</option>
                     {filteredInventory.map(item => {
-                      let displayLabel = item.name
-                      if (user?.role !== 'profesor') {
-                        displayLabel = `${item.name} (Stock: ${item.current_stock})`
-                      }
+                      const noStock = item.current_stock === 0
                       return (
-                        <option key={item.id} value={item.id}>
-                          {displayLabel}
+                        <option key={item.id} value={item.id} disabled={noStock}>
+                          {noStock ? '⛔ ' : '✅ '}{item.name} — Stock: {item.current_stock} {item.unit_of_measure || 'u'}
                         </option>
                       )
                     })}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-blue-400">
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                   </div>
                 </div>
+
+                {/* Stock badge after selection */}
+                {selectedItemId && (
+                  <div className={`mt-3 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold ${
+                    selectedItemStock === 0
+                      ? 'bg-red-100 text-red-700 border border-red-200'
+                      : selectedItemStock <= 5
+                      ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                      : 'bg-green-100 text-green-700 border border-green-200'
+                  }`}>
+                    <span>{selectedItemStock === 0 ? '🔴' : selectedItemStock <= 5 ? '🟡' : '🟢'}</span>
+                    <span>Stock disponible: <strong>{selectedItemStock}</strong> {inventory.find(i=>i.id===selectedItemId)?.unit_of_measure || 'unidades'}</span>
+                    {selectedItemStock === 0 && <span className="ml-auto text-xs">Sin stock</span>}
+                    {selectedItemStock > 0 && selectedItemStock <= 5 && <span className="ml-auto text-xs">Stock bajo</span>}
+                  </div>
+                )}
+
+                {/* Quantity input with validation */}
+                {selectedItemId && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-bold text-blue-700 mb-1 uppercase tracking-wider">Cantidad a solicitar</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max={selectedItemStock}
+                      value={newItemQuantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 1
+                        setNewItemQuantity(val)
+                      }}
+                      className={`w-full py-2.5 px-4 rounded-xl border-2 text-sm font-bold focus:outline-none transition-all ${
+                        newItemQuantity > selectedItemStock
+                          ? 'border-red-400 bg-red-50 text-red-700 focus:ring-2 focus:ring-red-300'
+                          : 'border-blue-200 bg-white text-gray-800 focus:ring-2 focus:ring-blue-400'
+                      }`}
+                    />
+                    {newItemQuantity > selectedItemStock && (
+                      <p className="mt-1.5 text-xs font-bold text-red-600 flex items-center gap-1">
+                        ⚠️ La cantidad supera el stock disponible ({selectedItemStock}). Reduce la cantidad.
+                      </p>
+                    )}
+                    {newItemQuantity <= selectedItemStock && selectedItemStock > 0 && (
+                      <p className="mt-1 text-xs text-green-600 font-medium">✓ Cantidad válida</p>
+                    )}
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-center my-4">
+              {/* ── SEPARADOR ── */}
+              <div className="flex items-center justify-center my-2">
                 <div className="h-px bg-gray-200 flex-1"></div>
-                <span className="px-4 text-xs font-black text-gray-400 uppercase tracking-widest">O Agrega</span>
+                <span className="px-4 text-xs font-black text-gray-400 uppercase tracking-widest">O bien, agrega uno personalizado</span>
                 <div className="h-px bg-gray-200 flex-1"></div>
               </div>
 
-              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Ítem Personalizado</label>
+              {/* ── SECCIÓN 2: Ítem Personalizado ── */}
+              <div className="bg-amber-50 border-2 border-amber-200 p-5 rounded-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest">✏️ Manual</span>
+                  <span className="text-xs text-amber-700 font-semibold">Para materiales que no están en el inventario</span>
+                </div>
                 <input
                   type="text"
-                  placeholder="Nombre del material"
+                  placeholder="Nombre del material o producto"
                   value={newItemName}
                   onChange={(e) => {
                     setNewItemName(e.target.value)
                     setSelectedItemId('')
+                    setSelectedItemStock(0)
                   }}
-                  className="w-full bg-gray-50 border border-gray-200 text-gray-900 py-3 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-base font-medium transition-all shadow-inner"
-                  title="Ingrese el nombre del artículo personalizado"
+                  className="w-full bg-white border-2 border-amber-200 text-gray-900 py-2.5 px-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm font-medium transition-all mb-3"
                 />
+                {/* Quantity & Unit for custom item */}
+                {newItemName.trim() && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-amber-700 mb-1">Cantidad</label>
+                      <input
+                        type="number" min="1"
+                        value={newItemQuantity}
+                        onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                        className="w-full py-2 px-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-amber-700 mb-1">Unidad</label>
+                      <select
+                        value={newItemUnit}
+                        onChange={(e) => { setNewItemUnit(e.target.value); if (!PACKAGE_UNITS.includes(e.target.value)) setNewItemUnitsPerPackage(1) }}
+                        className="w-full py-2 px-3 rounded-xl border-2 border-amber-200 bg-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-amber-400"
+                        aria-label="Unidad de medida"
+                      >
+                        {COMMON_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={newItemQuantity}
-                    onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-                    className="input-base"
-                    title="Ingrese la cantidad requerida"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unidad</label>
-                  <select
-                    value={newItemUnit}
-                    onChange={(e) => {
-                      setNewItemUnit(e.target.value)
-                      if (!PACKAGE_UNITS.includes(e.target.value)) setNewItemUnitsPerPackage(1)
-                    }}
-                    className="input-base"
-                    title="Seleccione la unidad de medida"
-                    aria-label="Unidad de medida"
-                  >
-                    {COMMON_UNITS.map(unit => (
-                      <option key={unit} value={unit}>{unit}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Units per package — only for cajas/paquetes/docenas */}
+              {/* Units per package */}
               {isPackageUnit && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <label className="block text-sm font-medium text-blue-800 mb-1">
                     Unidades por {newItemUnit.slice(0, -1)}
                   </label>
                   <input
-                    type="number"
-                    min="1"
+                    type="number" min="1"
                     value={newItemUnitsPerPackage}
                     onChange={(e) => setNewItemUnitsPerPackage(parseInt(e.target.value) || 1)}
                     className="input-base"
@@ -832,10 +894,30 @@ export default function RequisitionsPage() {
                 </div>
               )}
 
-              <button 
-                type="button" 
-                onClick={addItemToCart} 
-                className="w-full mt-4 flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-200"
+              {/* Quantity input when NOT from inventory */}
+              {!selectedItemId && !newItemName.trim() && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+                    <input type="number" min="1" value={newItemQuantity}
+                      onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                      className="input-base" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Unidad</label>
+                    <select value={newItemUnit} onChange={(e) => { setNewItemUnit(e.target.value); if (!PACKAGE_UNITS.includes(e.target.value)) setNewItemUnitsPerPackage(1) }}
+                      className="input-base" aria-label="Unidad">
+                      {COMMON_UNITS.map(unit => <option key={unit} value={unit}>{unit}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={addItemToCart}
+                disabled={selectedItemId ? (newItemQuantity > selectedItemStock || selectedItemStock === 0) : false}
+                className="w-full mt-2 flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-200 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <ShoppingCart size={18} />
                 Añadir al Carrito de Requisición
