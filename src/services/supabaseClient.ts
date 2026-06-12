@@ -659,18 +659,45 @@ export async function createPurchaseOrder(data: {
 // consolidated version that also records inventory movements and audit logs.
 // Older, simpler implementation removed to avoid duplicate exports.
 
-// Obtener siguiente número de requisición
+// Obtener siguiente número de requisición (Mensual: REQ-YYYYMM-XXXX)
 export async function getNextRequisitionNumber(licenseId: string): Promise<string> {
   try {
+    const date = new Date()
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
+    const prefix = `REQ-${yearMonth}-`
+
     const { data, error } = await supabase
-      .rpc('get_next_requisition_number', { p_license_id: licenseId })
+      .from('requisitions')
+      .select('requisition_number')
+      .eq('license_id', licenseId)
+      .ilike('requisition_number', `${prefix}%`)
+      .order('created_at', { ascending: false })
+      .limit(100)
 
     if (error) throw error
-    return data
+
+    if (!data || data.length === 0) {
+      return `${prefix}0001`
+    }
+
+    let maxNumber = 0
+    for (const item of data) {
+      if (item.requisition_number && item.requisition_number.startsWith(prefix)) {
+        const parts = item.requisition_number.split('-')
+        const num = parseInt(parts[2], 10)
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num
+        }
+      }
+    }
+
+    const nextNumber = maxNumber + 1
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`
   } catch (error) {
     console.error('Error getting next requisition number:', error)
-    // Fallback extremadamente seguro en caso de error de RPC
-    return `REQ-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
+    const date = new Date()
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
+    return `REQ-${yearMonth}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
   }
 }
 
@@ -714,6 +741,48 @@ export async function getNextPurchaseRequestNumber(licenseId: string): Promise<s
     const date = new Date()
     const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
     return `SOL-${yearMonth}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
+  }
+}
+
+// Obtener siguiente número de orden express (Mensual: EXP-YYYYMM-XXXX)
+export async function getNextExpressOrderNumber(licenseId: string): Promise<string> {
+  try {
+    const date = new Date()
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
+    const prefix = `EXP-${yearMonth}-`
+
+    const { data, error } = await supabase
+      .from('express_orders')
+      .select('order_number')
+      .eq('license_id', licenseId)
+      .ilike('order_number', `${prefix}%`)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (error) throw error
+
+    if (!data || data.length === 0) {
+      return `${prefix}0001`
+    }
+
+    let maxNumber = 0
+    for (const item of data) {
+      if (item.order_number && item.order_number.startsWith(prefix)) {
+        const parts = item.order_number.split('-')
+        const num = parseInt(parts[2], 10)
+        if (!isNaN(num) && num > maxNumber) {
+          maxNumber = num
+        }
+      }
+    }
+
+    const nextNumber = maxNumber + 1
+    return `${prefix}${String(nextNumber).padStart(4, '0')}`
+  } catch (error) {
+    console.error('Error getting next express order number:', error)
+    const date = new Date()
+    const yearMonth = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}`
+    return `EXP-${yearMonth}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`
   }
 }
 
@@ -3185,33 +3254,7 @@ export async function sendExpressOrderToReview(orderId: string) {
   }
 }
 
-export async function getNextExpressOrderNumber(licenseId: string): Promise<string> {
-  try {
-    const year = new Date().getFullYear();
-    const prefix = `EXP-${year}-`;
 
-    const { data, error } = await supabase
-      .from('express_purchase_orders')
-      .select('order_number')
-      .eq('license_id', licenseId)
-      .ilike('order_number', `${prefix}%`)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (error) throw error;
-
-    let nextNum = 1;
-    if (data && data.length > 0) {
-      const lastNum = parseInt(data[0].order_number.replace(prefix, ''));
-      if (!isNaN(lastNum)) nextNum = lastNum + 1;
-    }
-
-    return `${prefix}${nextNum.toString().padStart(3, '0')}`;
-  } catch (error) {
-    console.error('Error generating express order number:', error);
-    return `EXP-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;
-  }
-}
 // COST CENTERS & ENHANCED REQUISITIONS
 // ============================================================
 

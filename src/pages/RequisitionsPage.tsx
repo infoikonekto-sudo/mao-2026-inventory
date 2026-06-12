@@ -432,45 +432,201 @@ export default function RequisitionsPage() {
         <head>
           <title>Requisición ${req.requisition_number}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #222; }
-            h1 { font-size: 22px; margin-bottom: 4px; }
-            .subtitle { color: #666; font-size: 13px; margin-bottom: 20px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; }
-            .info-item label { font-size: 11px; text-transform: uppercase; color: #888; display: block; }
-            .info-item span { font-weight: bold; font-size: 14px; }
-            table { width: 100%; border-collapse: collapse; }
-            thead { background: #1d4ed8; color: white; }
-            thead th { padding: 10px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }
-            tbody tr:nth-child(even) { background: #f8f9fa; }
-            .footer { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-            .sign-box { border-top: 2px solid #222; padding-top: 8px; text-align: center; font-size: 12px; color: #555; }
-            @media print { body { padding: 0; } }
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@700&display=swap');
+            body { 
+              font-family: 'Inter', sans-serif; 
+              padding: 40px; 
+              color: #1e293b; 
+              max-width: 800px; 
+              margin: 0 auto;
+              background: #fff;
+            }
+            .header-container {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 2px solid #e2e8f0;
+              padding-bottom: 20px;
+              margin-bottom: 30px;
+            }
+            .brand h1 { 
+              font-size: 28px; 
+              font-weight: 800; 
+              margin: 0 0 5px 0; 
+              color: #0f172a;
+              letter-spacing: -0.5px;
+            }
+            .brand p { 
+              color: #64748b; 
+              font-size: 14px; 
+              margin: 0; 
+              font-weight: 300;
+            }
+            .doc-info {
+              text-align: right;
+            }
+            .doc-type {
+              font-size: 14px;
+              text-transform: uppercase;
+              letter-spacing: 2px;
+              color: #3b82f6;
+              font-weight: 800;
+              margin-bottom: 5px;
+            }
+            .doc-number {
+              font-family: 'Space Mono', monospace;
+              font-size: 24px;
+              color: #0f172a;
+              background: #f1f5f9;
+              padding: 5px 10px;
+              border-radius: 6px;
+            }
+            .info-grid { 
+              display: grid; 
+              grid-template-columns: 1fr 1fr; 
+              gap: 20px; 
+              margin-bottom: 30px; 
+              background: #f8fafc; 
+              padding: 24px; 
+              border-radius: 12px;
+              border: 1px solid #e2e8f0;
+            }
+            .info-item {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+            }
+            .info-item label { 
+              font-size: 11px; 
+              text-transform: uppercase; 
+              letter-spacing: 1px;
+              color: #64748b; 
+              font-weight: 600;
+            }
+            .info-item span { 
+              font-weight: 600; 
+              font-size: 15px; 
+              color: #0f172a;
+            }
+            .status-badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 12px;
+              font-weight: 800;
+              text-transform: uppercase;
+              background: #dbeafe;
+              color: #1e3a8a;
+            }
+            table { 
+              width: 100%; 
+              border-collapse: separate; 
+              border-spacing: 0;
+              margin-bottom: 40px;
+            }
+            thead th { 
+              background: #0f172a; 
+              color: white; 
+              padding: 14px 16px; 
+              text-align: left; 
+              font-size: 12px; 
+              text-transform: uppercase; 
+              letter-spacing: 1px;
+              font-weight: 600;
+            }
+            thead th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+            thead th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+            tbody td {
+              padding: 16px;
+              border-bottom: 1px solid #e2e8f0;
+              font-size: 14px;
+              color: #334155;
+            }
+            tbody tr:last-child td { border-bottom: none; }
+            .footer { 
+              margin-top: 60px; 
+              display: grid; 
+              grid-template-columns: 1fr 1fr; 
+              gap: 60px; 
+            }
+            .sign-box { 
+              border-top: 2px dashed #cbd5e1; 
+              padding-top: 12px; 
+              text-align: center; 
+            }
+            .sign-box .role {
+              font-size: 12px; 
+              font-weight: 800;
+              text-transform: uppercase;
+              color: #475569;
+              letter-spacing: 1px;
+              margin-bottom: 4px;
+            }
+            .sign-box .name {
+              font-size: 14px;
+              color: #0f172a;
+            }
+            @media print { 
+              body { padding: 0; } 
+              .header-container { padding-top: 20px; }
+            }
           </style>
         </head>
         <body>
-          <h1>📋 Requisición de Materiales</h1>
-          <p class="subtitle">Colegio Manos a la Obra — Sistema MAO 2026</p>
-          <div class="info-grid">
-            <div class="info-item"><label>Número</label><span>${req.requisition_number}</span></div>
-            <div class="info-item"><label>Estado</label><span>${req.status.replace(/_/g, ' ').toUpperCase()}</span></div>
-            <div class="info-item"><label>Solicitado por</label><span>${req.users?.full_name || 'Desconocido'}</span></div>
-            <div class="info-item"><label>Prioridad</label><span>${req.priority?.toUpperCase()}</span></div>
-            <div class="info-item"><label>Justificación</label><span>${req.justification || '—'}</span></div>
-            <div class="info-item"><label>Fecha de aprobación</label><span>${new Date().toLocaleDateString('es-GT')}</span></div>
+          <div class="header-container">
+            <div class="brand">
+              <h1>Sistema MAO 2026</h1>
+              <p>Colegio Manos a la Obra</p>
+            </div>
+            <div class="doc-info">
+              <div class="doc-type">Requisición de Materiales</div>
+              <div class="doc-number">${req.requisition_number}</div>
+            </div>
           </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Fecha de Emisión</label>
+              <span>${new Date(req.created_at).toLocaleDateString('es-GT', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</span>
+            </div>
+            <div class="info-item">
+              <label>Estado del Documento</label>
+              <div><span class="status-badge">${req.status.replace(/_/g, ' ')}</span></div>
+            </div>
+            <div class="info-item">
+              <label>Solicitante</label>
+              <span>👤 ${req.users?.full_name || 'Desconocido'}</span>
+            </div>
+            <div class="info-item">
+              <label>Prioridad</label>
+              <span style="color: ${req.priority === 'alta' ? '#ef4444' : '#0f172a'}">${req.priority?.toUpperCase()}</span>
+            </div>
+            <div class="info-item" style="grid-column: 1 / -1;">
+              <label>Propósito / Justificación</label>
+              <span>${req.justification || 'Sin justificación especificada.'}</span>
+            </div>
+          </div>
+
           <table>
             <thead>
               <tr>
                 <th>Descripción del Artículo</th>
                 <th style="text-align:center;">Cantidad</th>
-                <th>Unidad</th>
+                <th>Unidad de Medida</th>
               </tr>
             </thead>
             <tbody>${itemRows}</tbody>
           </table>
+
           <div class="footer">
-            <div class="sign-box">Firma del Solicitante</div>
-            <div class="sign-box">Firma del Autorizador (Jefe de Compras)</div>
+            <div class="sign-box">
+              <div class="role">Recibe Conforme</div>
+              <div class="name">${req.users?.full_name || 'Firma del Solicitante'}</div>
+            </div>
+            <div class="sign-box">
+              <div class="role">Autoriza / Entrega</div>
+              <div class="name">Administración MAO 2026</div>
+            </div>
           </div>
         </body>
         </html>

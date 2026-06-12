@@ -179,65 +179,8 @@ export const generatePurchaseOrderPDF = (order: PurchaseOrder, approvals: any[] 
 };
 
 export const generateExpressOrderPDF = (order: any) => {
-    const doc = new jsPDF();
-
-    // -- CONFIG --
-    const margin = 20;
-    let y = margin;
-
-    // -- HEADER --
-    doc.setFontSize(22);
-    doc.setTextColor(41, 128, 185); // Blue
-    doc.text('ORDEN DE COMPRA EXPRESS', margin, y);
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`No. ${order.order_number}`, 150, y);
-    y += 6;
-    doc.text(`Fecha: ${new Date(order.created_at).toLocaleDateString()}`, 150, y);
-    y += 6;
-
-    // Status Label
-    const statusLabel = order.status === 'pending_approval' ? 'EN REVISIÓN' :
-        order.status === 'approved' ? 'APROBADA' :
-            order.status === 'completed' ? 'COMPLETADA' :
-                order.status.toUpperCase();
-
-    doc.text(`Estado: ${statusLabel}`, 150, y);
-
-    y += 15;
-
-    // -- GENERAL INFO --
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INFORMACIÓN GENERAL', margin, y);
-    y += 8;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
-
-    // Left col
-    const creatorName = order.creator?.full_name || 'N/A';
-    doc.text(`Solicitante: ${creatorName}`, margin, y);
-    y += 6;
-    doc.text(`Departamento: ${order.department || 'N/A'}`, margin, y);
-    y += 6;
-    doc.text(`Método de Pago: ${order.payment_method?.toUpperCase() || ''} ${order.cheque_number ? `(#${order.cheque_number})` : ''}`, margin, y);
-    y += 10;
-
-    // Justification Box
-    doc.setFont('helvetica', 'italic');
-    const splitJustification = doc.splitTextToSize(`"Justificación: ${order.justification}"`, 170);
-    doc.text(splitJustification, margin, y);
-    y += (splitJustification.length * 5) + 10;
-
-    // -- ITEMS GROUPED BY SUPPLIER --
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text('DETALLE DE ARTÍCULOS POR PROVEEDOR', margin, y);
-    y += 8;
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    if (!printWindow) return;
 
     // Group items
     const itemsBySupplier: Record<string, any[]> = {};
@@ -249,109 +192,265 @@ export const generateExpressOrderPDF = (order: any) => {
         });
     }
 
+    let itemsHtml = '';
+    let globalTotal = 0;
+
     Object.entries(itemsBySupplier).forEach(([supplier, items]) => {
-        // Supplier Header
-        if (y > 270) { doc.addPage(); y = margin; }
-
-        doc.setFontSize(11);
-        doc.setTextColor(41, 128, 185);
-        doc.text(supplier.toUpperCase(), margin, y);
-        y += 6;
-
-        const tableColumn = ["Cant", "Unidad", "Descripción", "Precio Est.", "Subtotal"];
-        const tableRows = items.map(item => [
-            item.quantity,
-            item.unit,
-            item.description,
-            `Q ${item.estimated_unit_price.toLocaleString()}`,
-            `Q ${(item.quantity * item.estimated_unit_price).toLocaleString()}`
-        ]);
-
-        autoTable(doc, {
-            startY: y,
-            head: [tableColumn],
-            body: tableRows,
-            theme: 'grid',
-            headStyles: { fillColor: [240, 240, 240], textColor: 50 },
-            styles: { fontSize: 9, cellPadding: 2 },
-            columnStyles: {
-                0: { halign: 'center', cellWidth: 15 },
-                1: { halign: 'center', cellWidth: 20 },
-                3: { halign: 'right' },
-                4: { halign: 'right', fontStyle: 'bold' }
-            }
+        itemsHtml += `<h3 class="supplier-title">${supplier.toUpperCase()}</h3>`;
+        itemsHtml += `
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">Cant.</th>
+                        <th style="width: 15%;">Unidad</th>
+                        <th style="width: 45%;">Descripción</th>
+                        <th style="text-align: right; width: 15%;">Precio Est.</th>
+                        <th style="text-align: right; width: 15%;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        let supplierTotal = 0;
+        items.forEach(item => {
+            const subtotal = item.quantity * item.estimated_unit_price;
+            supplierTotal += subtotal;
+            globalTotal += subtotal;
+            itemsHtml += `
+                <tr>
+                    <td style="text-align: center; font-weight: bold;">${item.quantity}</td>
+                    <td style="text-align: center;">${item.unit}</td>
+                    <td>${item.description}</td>
+                    <td style="text-align: right;">Q ${item.estimated_unit_price.toLocaleString('es-GT', {minimumFractionDigits:2})}</td>
+                    <td style="text-align: right; font-weight: bold;">Q ${subtotal.toLocaleString('es-GT', {minimumFractionDigits:2})}</td>
+                </tr>
+            `;
         });
-
-        // @ts-ignore
-        y = doc.lastAutoTable.finalY + 10;
+        itemsHtml += `
+                </tbody>
+            </table>
+            <div class="supplier-total">Subtotal Proveedor: Q ${supplierTotal.toLocaleString('es-GT', {minimumFractionDigits:2})}</div>
+        `;
     });
 
-    if (y > 270) { doc.addPage(); y = margin; }
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Orden Express ${order.order_number}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Space+Mono:wght@700&display=swap');
+                body { 
+                    font-family: 'Inter', sans-serif; 
+                    padding: 40px; 
+                    color: #1e293b; 
+                    max-width: 800px; 
+                    margin: 0 auto;
+                    background: #fff;
+                }
+                .header-container {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    border-bottom: 2px solid #e2e8f0;
+                    padding-bottom: 20px;
+                    margin-bottom: 30px;
+                }
+                .brand h1 { 
+                    font-size: 28px; 
+                    font-weight: 800; 
+                    margin: 0 0 5px 0; 
+                    color: #0f172a;
+                    letter-spacing: -0.5px;
+                }
+                .brand p { 
+                    color: #64748b; 
+                    font-size: 14px; 
+                    margin: 0; 
+                    font-weight: 300;
+                }
+                .doc-info { text-align: right; }
+                .doc-type {
+                    font-size: 14px;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    color: #8b5cf6;
+                    font-weight: 800;
+                    margin-bottom: 5px;
+                }
+                .doc-number {
+                    font-family: 'Space Mono', monospace;
+                    font-size: 24px;
+                    color: #0f172a;
+                    background: #f1f5f9;
+                    padding: 5px 10px;
+                    border-radius: 6px;
+                }
+                .info-grid { 
+                    display: grid; 
+                    grid-template-columns: 1fr 1fr; 
+                    gap: 20px; 
+                    margin-bottom: 30px; 
+                    background: #f8fafc; 
+                    padding: 24px; 
+                    border-radius: 12px;
+                    border: 1px solid #e2e8f0;
+                }
+                .info-item { display: flex; flex-direction: column; gap: 4px; }
+                .info-item label { 
+                    font-size: 11px; 
+                    text-transform: uppercase; 
+                    letter-spacing: 1px;
+                    color: #64748b; 
+                    font-weight: 600;
+                }
+                .info-item span { font-weight: 600; font-size: 15px; color: #0f172a; }
+                .status-badge {
+                    display: inline-block;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    background: #ede9fe;
+                    color: #5b21b6;
+                }
+                .supplier-title {
+                    font-size: 14px;
+                    color: #8b5cf6;
+                    margin: 20px 0 10px 0;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }
+                table { 
+                    width: 100%; 
+                    border-collapse: separate; 
+                    border-spacing: 0;
+                    margin-bottom: 10px;
+                }
+                thead th { 
+                    background: #0f172a; 
+                    color: white; 
+                    padding: 12px 16px; 
+                    text-align: left; 
+                    font-size: 11px; 
+                    text-transform: uppercase; 
+                    letter-spacing: 1px;
+                    font-weight: 600;
+                }
+                thead th:first-child { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+                thead th:last-child { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+                tbody td {
+                    padding: 12px 16px;
+                    border-bottom: 1px solid #e2e8f0;
+                    font-size: 13px;
+                    color: #334155;
+                }
+                tbody tr:last-child td { border-bottom: none; }
+                .supplier-total {
+                    text-align: right;
+                    font-size: 12px;
+                    color: #64748b;
+                    margin-bottom: 30px;
+                    font-weight: 600;
+                }
+                .grand-total-box {
+                    background: #0f172a;
+                    color: white;
+                    padding: 20px;
+                    border-radius: 12px;
+                    text-align: right;
+                    margin-top: 20px;
+                }
+                .grand-total-box .label {
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    color: #94a3b8;
+                    margin-bottom: 4px;
+                }
+                .grand-total-box .value {
+                    font-size: 28px;
+                    font-weight: 800;
+                    font-family: 'Space Mono', monospace;
+                }
+                .footer { 
+                    margin-top: 60px; 
+                    display: grid; 
+                    grid-template-columns: repeat(3, 1fr); 
+                    gap: 30px; 
+                }
+                .sign-box { 
+                    border-top: 2px dashed #cbd5e1; 
+                    padding-top: 12px; 
+                    text-align: center; 
+                }
+                .sign-box .role {
+                    font-size: 11px; 
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    color: #475569;
+                    letter-spacing: 1px;
+                }
+                @media print { 
+                    body { padding: 0; } 
+                    .header-container { padding-top: 20px; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header-container">
+                <div class="brand">
+                    <h1>Sistema MAO 2026</h1>
+                    <p>Colegio Manos a la Obra</p>
+                </div>
+                <div class="doc-info">
+                    <div class="doc-type">Orden de Compra Express</div>
+                    <div class="doc-number">${order.order_number}</div>
+                </div>
+            </div>
 
-    // -- TOTALS --
-    let total = 0;
-    if (order.items) {
-        total = order.items.reduce((sum: number, i: any) => sum + (i.quantity * i.estimated_unit_price), 0);
-    }
+            <div class="info-grid">
+                <div class="info-item">
+                    <label>Fecha de Emisión</label>
+                    <span>${new Date(order.created_at).toLocaleDateString('es-GT')}</span>
+                </div>
+                <div class="info-item">
+                    <label>Estado</label>
+                    <div><span class="status-badge">${order.status.replace(/_/g, ' ')}</span></div>
+                </div>
+                <div class="info-item">
+                    <label>Solicitante</label>
+                    <span>👤 ${order.creator?.full_name || 'Desconocido'}</span>
+                </div>
+                <div class="info-item">
+                    <label>Departamento</label>
+                    <span>🏢 ${order.department || 'N/A'}</span>
+                </div>
+                <div class="info-item" style="grid-column: 1 / -1;">
+                    <label>Justificación / Propósito</label>
+                    <span>${order.justification || 'Sin justificación'}</span>
+                </div>
+            </div>
 
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`TOTAL ESTIMADO: Q ${total.toLocaleString()}`, 140, y);
+            ${itemsHtml}
 
-    if (order.real_total) {
-        y += 6;
-        doc.setTextColor(41, 128, 185);
-        doc.text(`TOTAL REAL: Q ${order.real_total.toLocaleString()}`, 140, y);
-    }
+            <div class="grand-total-box">
+                <div class="label">Total Estimado General</div>
+                <div class="value">Q ${globalTotal.toLocaleString('es-GT', {minimumFractionDigits:2})}</div>
+            </div>
 
-    y += 25;
-    if (y > 260) { doc.addPage(); y = margin + 20; }
+            <div class="footer">
+                <div class="sign-box"><div class="role">Autoriza Presupuesto</div></div>
+                <div class="sign-box"><div class="role">Autoriza Operaciones</div></div>
+                <div class="sign-box"><div class="role">Autoriza Calidad</div></div>
+            </div>
+        </body>
+        </html>
+    `);
 
-    // -- SIGNATURES --
-    doc.setTextColor(0);
-    doc.setFontSize(10);
-    doc.text('AUTORIZACIONES', margin, y);
-    y += 5;
-
-    const roles = [
-        { id: 'jefe_presupuesto', label: 'PRESUPUESTO' },
-        { id: 'jefe_operaciones', label: 'OPERACIONES' },
-        { id: 'jefe_calidad', label: 'CALIDAD' }
-    ];
-
-    const boxWidth = 45;
-    const boxHeight = 25;
-    const gap = 10;
-    let x = margin;
-
-    roles.forEach(role => {
-        const approval = order.approvals?.find((a: any) => a.approver_role === role.id && a.status === 'approved');
-
-        doc.setDrawColor(200);
-        doc.rect(x, y, boxWidth, boxHeight);
-
-        doc.setFontSize(7);
-        doc.text(role.label, x + 2, y + 4);
-
-        if (approval) {
-            doc.setFontSize(8);
-            doc.setTextColor(0, 100, 0); // Green
-            doc.text('AUTORIZADO', x + 5, y + 15);
-            doc.setFontSize(6);
-            doc.setTextColor(100);
-            doc.text(new Date(approval.approved_at).toLocaleDateString(), x + 5, y + 22);
-        } else {
-            doc.setFontSize(8);
-            doc.setTextColor(150);
-            doc.text('PENDIENTE', x + 10, y + 15);
-        }
-
-        doc.setTextColor(0);
-        x += boxWidth + gap;
-    });
-
-    doc.save(`Orden_Express_${order.order_number}.pdf`);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 500);
 };
 
 export const generateRequisitionDeliveryPDF = async (

@@ -710,16 +710,62 @@ export default function ProfessionalReportsPage() {
           columnStyles: reportType === 'exits' ? { 6: { halign: 'right' }, 7: { halign: 'right' } } : { 4: { halign: 'right' }, 5: { halign: 'right' } }
         });
 
-        if (reportType === 'exits' && !selectedCostCenter && !selectedDepartment) {
-          const finalY = (pdf as any).lastAutoTable.finalY || yPos;
-          let chartY = finalY + 15;
-          if (chartY > pdf.internal.pageSize.getHeight() - 60) {
+        if (reportType === 'exits') {
+          // Calculate Area totals
+          const areaMap: Record<string, number> = {}
+          let grandTotal = 0
+          filteredMovements.forEach(m => {
+            const areaName = m.areaInfo ? (allDepartments.find(d => d.id === m.areaInfo.department_id)?.name || allCostCenters.find(c => c.id === m.areaInfo.cost_center_id)?.name || 'Desconocida') : 'Desconocida'
+            const value = Math.abs(m.change || m.quantity || 0) * (m.items?.unit_cost || 0)
+            areaMap[areaName] = (areaMap[areaName] || 0) + value
+            grandTotal += value
+          })
+
+          const summaryData = Object.entries(areaMap)
+            .sort((a, b) => b[1] - a[1])
+            .map(([area, total]) => [area, `Q ${total.toLocaleString('es-GT', {minimumFractionDigits: 2})}`])
+          
+          summaryData.push(['GRAN TOTAL DE EGRESOS', `Q ${grandTotal.toLocaleString('es-GT', {minimumFractionDigits: 2})}`])
+
+          let finalY = (pdf as any).lastAutoTable.finalY || yPos;
+          if (finalY > pdf.internal.pageSize.getHeight() - 60) {
             pdf.addPage();
-            chartY = 20;
+            finalY = 20;
+          } else {
+            finalY += 15;
           }
+
           pdf.setFont('helvetica', 'bold');
-          pdf.text('COMPARATIVA DE GASTOS POR ÁREA', 20, chartY);
-          await addChartToPDF('chart-exits-areas', chartY + 10);
+          pdf.setFontSize(10);
+          pdf.text('RESUMEN FINANCIERO', 20, finalY);
+
+          autoTable(pdf, {
+            startY: finalY + 5,
+            head: [['Área / Centro de Costo', 'Monto Total']],
+            body: summaryData,
+            theme: 'grid',
+            headStyles: { fillColor: [225, 29, 72] },
+            styles: { fontSize: 8 },
+            columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+            didParseCell: function(data) {
+              if (data.row.index === summaryData.length - 1) {
+                data.cell.styles.fillColor = [241, 245, 249];
+                data.cell.styles.fontStyle = 'bold';
+              }
+            }
+          });
+
+          if (!selectedCostCenter && !selectedDepartment) {
+            finalY = (pdf as any).lastAutoTable.finalY || finalY;
+            let chartY = finalY + 15;
+            if (chartY > pdf.internal.pageSize.getHeight() - 60) {
+              pdf.addPage();
+              chartY = 20;
+            }
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('COMPARATIVA DE GASTOS POR ÁREA', 20, chartY);
+            await addChartToPDF('chart-exits-areas', chartY + 10);
+          }
         }
       } else if (reportType === 'orders' && reportData.orders) {
         const tableData = reportData.orders.map((o, idx) => [
@@ -920,6 +966,37 @@ export default function ProfessionalReportsPage() {
             result['Referencia'] = m.justification || m.purpose || 'Sin referencia'
             return result
           })
+
+        if (reportType === 'exits') {
+          // Calculate Area totals
+          const areaMap: Record<string, number> = {}
+          let grandTotal = 0
+          exportData.forEach(row => {
+            const areaName = row['Centro de Costo'] !== 'N/A' ? row['Centro de Costo'] : (row['Área / Depto'] !== 'N/A' ? row['Área / Depto'] : 'Desconocida')
+            const value = row['Monto Total (Q)'] || 0
+            areaMap[areaName] = (areaMap[areaName] || 0) + value
+            grandTotal += value
+          })
+          
+          exportData.push({})
+          exportData.push({ 'Fecha': 'RESUMEN FINANCIERO', 'Artículo': '--------------------' })
+          
+          Object.entries(areaMap)
+            .sort((a, b) => b[1] - a[1])
+            .forEach(([area, total]) => {
+              exportData.push({
+                'Fecha': `Subtotal ${area}`,
+                'Monto Total (Q)': total
+              })
+            })
+            
+          exportData.push({})
+          exportData.push({
+            'Fecha': 'GRAN TOTAL DE EGRESOS',
+            'Monto Total (Q)': grandTotal
+          })
+        }
+
         fileName = reportType === 'entries' ? 'Entradas-Inventario' : 'Salidas-Inventario'
       } else if (reportType === 'abc' && reportData.movements) {
         exportData = reportData.movements.map(item => ({
@@ -1144,7 +1221,7 @@ export default function ProfessionalReportsPage() {
         </div>
 
         {/* Filtro de Área / Departamento (para reportes relevantes) */}
-        {(reportType === 'requisitions' || reportType === 'requests' || reportType === 'orders') && (
+        {(reportType === 'requisitions' || reportType === 'requests' || reportType === 'orders' || reportType === 'exits') && (
           <div className="w-full md:w-64 space-y-2">
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
               📍 Área / Departamento
