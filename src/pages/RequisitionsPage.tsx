@@ -44,20 +44,6 @@ const priorityColors = {
   urgente: '#EF4444',
 }
 
-const COMMON_UNITS = [
-  'unidades',
-  'cajas',
-  'paquetes',
-  'docenas',
-  'metros',
-  'litros',
-  'kilogramos',
-  'piezas',
-  'rollos',
-  'galones',
-  'libras'
-]
-
 const PACKAGE_UNITS = ['cajas', 'paquetes', 'docenas']
 
 export default function RequisitionsPage() {
