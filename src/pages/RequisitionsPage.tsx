@@ -130,14 +130,26 @@ export default function RequisitionsPage() {
   // Let's refine the StartLine/EndLine for the useEffect block.
 
   const handleRequisitionUpdate = useCallback((requisitionId: string, updatedFields: any) => {
-    setRequisitions(prev =>
-      prev.map(req =>
+    setRequisitions(prev => {
+      const existingReq = prev.find(r => r.id === requisitionId);
+      if (existingReq && updatedFields.status && existingReq.status !== updatedFields.status) {
+        if (user?.role === 'profesor') {
+          if (updatedFields.status === 'aprobada') {
+            toast.success(`Tu requisición ${existingReq.requisition_number || ''} ha sido Aprobada.`);
+          } else if (updatedFields.status === 'listo_para_recoger') {
+            toast.success(`Tu pedido de requisición ${existingReq.requisition_number || ''} está Listo para Recoger.`);
+          } else if (updatedFields.status === 'rechazada') {
+            toast.error(`Tu requisición ${existingReq.requisition_number || ''} ha sido Rechazada.`);
+          }
+        }
+      }
+      return prev.map(req =>
         req.id === requisitionId
           ? { ...req, ...updatedFields }
           : req
-      )
-    )
-  }, [])
+      );
+    });
+  }, [user]);
 
   useRequisitionRealtime(user?.license_id || '', user?.id, handleRequisitionUpdate)
 

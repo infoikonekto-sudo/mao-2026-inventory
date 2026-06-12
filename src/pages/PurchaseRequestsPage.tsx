@@ -111,14 +111,26 @@ export default function PurchaseRequestsPage() {
 
   // Escuchar cambios en tiempo real - Actualiza fila específica sin recargar TODO
   const handlePurchaseRequestUpdate = useCallback((requestId: string, updatedFields: any) => {
-    setPurchaseRequests(prev =>
-      prev.map(req =>
+    setPurchaseRequests(prev => {
+      const existingReq = prev.find(r => r.id === requestId);
+      if (existingReq && updatedFields.status && existingReq.status !== updatedFields.status) {
+        if (user?.role === 'profesor') {
+          if (updatedFields.status === 'aprobada') {
+            toast.success(`Tu solicitud de compra ${existingReq.request_number || ''} ha sido Aprobada.`);
+          } else if (updatedFields.status === 'listo_para_recoger') {
+            toast.success(`El pedido de tu solicitud ${existingReq.request_number || ''} está Listo para Recoger.`);
+          } else if (updatedFields.status === 'rechazada') {
+            toast.error(`Tu solicitud de compra ${existingReq.request_number || ''} ha sido Rechazada.`);
+          }
+        }
+      }
+      return prev.map(req =>
         req.id === requestId
           ? { ...req, ...updatedFields }
           : req
-      )
-    )
-  }, [])
+      );
+    });
+  }, [user]);
 
   usePurchaseRequestRealtime(user?.license_id || '', user?.id, handlePurchaseRequestUpdate)
 
