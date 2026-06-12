@@ -3486,7 +3486,8 @@ export async function createRequisitionWithItems(
         .eq('license_id', licenseId)
         .eq('department_id', department_id)
         .eq('is_active', true)
-        .single()
+        .limit(1)
+        .maybeSingle()
 
       cost_center_id = costCenter?.id || null
     }
