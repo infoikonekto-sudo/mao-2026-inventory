@@ -721,16 +721,20 @@ export default function ProfessionalReportsPage() {
           i.name || 'N/A',
           i.category || 'N/A',
           i.current_stock || 0,
-          `Q ${(i.unit_cost || 0).toLocaleString()}`,
-          `Q ${((i.current_stock || 0) * (i.unit_cost || 0)).toLocaleString()}`
+          `Q ${(i.unit_cost || 0).toLocaleString('es-GT', {minimumFractionDigits: 2})}`,
+          `Q ${((i.current_stock || 0) * (i.unit_cost || 0)).toLocaleString('es-GT', {minimumFractionDigits: 2})}`
         ]);
+
+        const totalInventoryValue = reportData.inventory.reduce((sum, i) => sum + ((i.current_stock || 0) * (i.unit_cost || 0)), 0);
 
         autoTable(pdf, {
           startY: yPos,
           head: [['#', 'Código', 'Nombre', 'Categoría', 'Stock', 'Costo Unit.', 'Valor Total']],
           body: tableData,
+          foot: [['', '', '', '', '', 'VALOR TOTAL DEL INVENTARIO', `Q ${totalInventoryValue.toLocaleString('es-GT', {minimumFractionDigits: 2})}`]],
           theme: 'striped',
           headStyles: { fillColor: [0, 102, 204] },
+          footStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontStyle: 'bold' },
           styles: { fontSize: 8 },
           columnStyles: { 5: { halign: 'right' }, 6: { halign: 'right', fontStyle: 'bold' } }
         });
