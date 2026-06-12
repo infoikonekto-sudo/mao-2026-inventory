@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { FileDown, Filter, Calendar, Package, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { FileDown, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { supabase, getInventory } from '@/services/supabaseClient'
 import { useAuthStore } from '@/stores/authStore'
@@ -31,7 +31,7 @@ export default function ReportsPage() {
   
   // Filters
   const [dateRange, setDateRange] = useState('month')
-  const [filterDepartment, setFilterDepartment] = useState('')
+  const [filterDepartment] = useState('')
 
   useEffect(() => {
     if (user?.license_id) {

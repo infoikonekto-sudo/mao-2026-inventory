@@ -96,12 +96,12 @@ export default function InventoryEntryTab() {
           item_code: code,
           name: newItemName,
           category: newItemCategory,
-          minimum_stock: newItemMinStock,
-          unit_cost: unitCost,
+          min_stock: newItemMinStock,
+          price: unitCost,
           location: 'Bodega Principal',
           unit_of_measure: newItemUnit,
           units_per_package: 1,
-          current_stock: 0 // Will be updated by movement
+          stock: 0 // Will be updated by movement
         })
 
         if (!newItem) throw new Error('Failed to create item')
