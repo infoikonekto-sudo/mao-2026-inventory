@@ -676,23 +676,38 @@ export default function ProfessionalReportsPage() {
           reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion')
         );
 
-        const tableData = filteredMovements.map((m: any, idx: number) => [
-          idx + 1,
-          new Date(m.created_at).toLocaleDateString(),
-          m.items?.name || 'N/A',
-          m.quantity,
-          `Q ${(m.items?.unit_cost || 0).toLocaleString()}`,
-          `Q ${(m.quantity * (m.items?.unit_cost || 0)).toLocaleString()}`,
-          m.reference_type || 'Manual'
-        ]);
+        const tableData = filteredMovements.map((m: any, idx: number) => {
+          const qty = Math.abs(m.change || m.quantity || 0)
+          const baseCols = [
+            idx + 1,
+            new Date(m.created_at).toLocaleDateString(),
+            m.items?.name || 'N/A',
+            qty,
+            `Q ${(m.items?.unit_cost || 0).toLocaleString('es-GT', {minimumFractionDigits: 2})}`,
+            `Q ${(qty * (m.items?.unit_cost || 0)).toLocaleString('es-GT', {minimumFractionDigits: 2})}`,
+            m.justification || m.purpose || 'Sin referencia'
+          ]
+          
+          if (reportType === 'exits') {
+            const areaName = m.areaInfo ? (allDepartments.find(d => d.id === m.areaInfo.department_id)?.name || allCostCenters.find(c => c.id === m.areaInfo.cost_center_id)?.name || 'N/A') : 'N/A'
+            const userName = m.user?.full_name || 'N/A'
+            baseCols.splice(4, 0, areaName, userName)
+          }
+          return baseCols
+        });
+
+        const headCols = reportType === 'exits' 
+          ? [['#', 'Fecha', 'Artículo', 'Cant.', 'Área', 'Responsable', 'V. Unit.', 'V. Total', 'Ref.']]
+          : [['#', 'Fecha', 'Artículo', 'Cant.', 'V. Unit.', 'V. Total', 'Ref.']]
 
         autoTable(pdf, {
           startY: yPos,
-          head: [['#', 'Fecha', 'Artículo', 'Cant.', 'V. Unit.', 'V. Total', 'Ref.']],
+          head: headCols,
           body: tableData,
           theme: 'striped',
-          headStyles: { fillColor: [0, 102, 204] },
-          styles: { fontSize: 7 }
+          headStyles: { fillColor: reportType === 'entries' ? [16, 185, 129] : [225, 29, 72] },
+          styles: { fontSize: 7, cellPadding: 2 },
+          columnStyles: reportType === 'exits' ? { 6: { halign: 'right' }, 7: { halign: 'right' } } : { 4: { halign: 'right' }, 5: { halign: 'right' } }
         });
       } else if (reportType === 'orders' && reportData.orders) {
         const tableData = reportData.orders.map((o, idx) => [
