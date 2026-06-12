@@ -355,7 +355,37 @@ export default function ProfessionalReportsPage() {
           items: itemMap.get(m.item_id)
         }))
 
-        data.movements = movementsWithDetails
+        let finalMovements = movementsWithDetails
+
+        if (reportType === 'exits') {
+          const reqIds = finalMovements.filter(m => m.related_type === 'requisition').map(m => m.related_id).filter(Boolean)
+          const expressIds = finalMovements.filter(m => m.related_type === 'express_order').map(m => m.related_id).filter(Boolean)
+
+          const [reqRes, expressRes] = await Promise.all([
+            reqIds.length ? supabase.from('requisitions').select('id, department_id, cost_center_id').in('id', reqIds) : { data: [] },
+            expressIds.length ? supabase.from('express_orders').select('id, department_id, cost_center_id').in('id', expressIds) : { data: [] }
+          ])
+
+          const reqMap = new Map((reqRes.data || []).map((r:any) => [r.id, r]))
+          const expressMap = new Map((expressRes.data || []).map((e:any) => [e.id, e]))
+
+          finalMovements = finalMovements.map(m => {
+            let areaInfo = null
+            if (m.related_type === 'requisition') areaInfo = reqMap.get(m.related_id)
+            if (m.related_type === 'express_order') areaInfo = expressMap.get(m.related_id)
+            return { ...m, areaInfo }
+          })
+
+          if (selectedCostCenter || selectedDepartment) {
+            finalMovements = finalMovements.filter(m => {
+              if (!m.areaInfo) return !selectedCostCenter && !selectedDepartment
+              return (!selectedCostCenter || m.areaInfo.cost_center_id === selectedCostCenter) &&
+                     (!selectedDepartment || m.areaInfo.department_id === selectedDepartment)
+            })
+          }
+        }
+
+        data.movements = finalMovements
         data.inventory = items || []
 
         if (reportType === 'dash-movements') {
@@ -637,7 +667,7 @@ export default function ProfessionalReportsPage() {
         });
       } else if ((reportType === 'entries' || reportType === 'exits') && reportData.movements) {
         const filteredMovements = reportData.movements.filter(m =>
-          reportType === 'entries' ? m.movement_type === 'entrada' : (m.movement_type === 'salida' || m.movement_type === 'requisicion')
+          reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion')
         );
 
         const tableData = filteredMovements.map((m: any, idx: number) => [
@@ -838,15 +868,24 @@ export default function ProfessionalReportsPage() {
       } else if (reportType === 'entries' || reportType === 'exits') {
         exportData = (reportData.movements || [])
           .filter(m => reportType === 'entries' ? m.type === 'entrada' : (m.type === 'salida' || m.type === 'requisicion'))
-          .map(m => ({
-            'Fecha': new Date(m.created_at).toLocaleDateString('es-CO'),
-            'Artículo': m.items?.name || 'N/A',
-            'Código': m.items?.item_code || 'N/A',
-            'Cantidad': Math.abs(m.change || 0),
-            'Costo Unitario (Q)': m.items?.unit_cost || 0,
-            'Monto Total (Q)': Math.abs(m.change || 0) * (m.items?.unit_cost || 0),
-            'Referencia': m.justification || m.purpose || 'Sin referencia'
-          }))
+          .map(m => {
+            const deptName = m.areaInfo ? (allDepartments.find(d => d.id === m.areaInfo.department_id)?.name || 'N/A') : 'N/A'
+            const ccName = m.areaInfo ? (allCostCenters.find(c => c.id === m.areaInfo.cost_center_id)?.name || 'N/A') : 'N/A'
+            const result: any = {
+              'Fecha': new Date(m.created_at).toLocaleDateString('es-CO'),
+              'Artículo': m.items?.name || 'N/A',
+              'Código': m.items?.item_code || 'N/A'
+            }
+            if (reportType === 'exits') {
+              result['Área / Depto'] = deptName
+              result['Centro de Costo'] = ccName
+            }
+            result['Cantidad'] = Math.abs(m.change || 0)
+            result['Costo Unitario (Q)'] = m.items?.unit_cost || 0
+            result['Monto Total (Q)'] = Math.abs(m.change || 0) * (m.items?.unit_cost || 0)
+            result['Referencia'] = m.justification || m.purpose || 'Sin referencia'
+            return result
+          })
         fileName = reportType === 'entries' ? 'Entradas-Inventario' : 'Salidas-Inventario'
       } else if (reportType === 'abc' && reportData.movements) {
         exportData = reportData.movements.map(item => ({
@@ -999,6 +1038,10 @@ export default function ProfessionalReportsPage() {
       const lowStock = reportData.inventory.filter(i => (i.current_stock || 0) <= (i.minimum_stock || 0)).length
       const totalValue = reportData.inventory.reduce((sum, i) => sum + ((i.current_stock || 0) * (i.unit_cost || 0)), 0)
       return { total: reportData.inventory.length, lowStock, totalValue }
+    } else if (reportType === 'exits' && reportData.movements) {
+      const exits = reportData.movements.filter(m => m.type === 'salida' || m.type === 'requisicion')
+      const totalValue = exits.reduce((sum, m) => sum + (Math.abs(m.change || 0) * (m.items?.unit_cost || 0)), 0)
+      return { total: exits.length, totalValue }
     }
     return {}
   }
